@@ -1,5 +1,6 @@
 from web3 import Web3
 import sqlite3 as sqlite
+import datetime
 import time
 import pywaves as pw
 import traceback
@@ -32,11 +33,11 @@ class ERC20Tunnel(object):
 
     def getTransaction(self, id):
         result = None
-        w3 = self.getWeb3Instance()
-        transaction = w3.eth.getTransaction(id)
-        contract = w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
+        #w3 = self.getWeb3Instance()
+        transaction = self.w3.eth.getTransaction(id)
 
         if transaction['to'] == self.config['erc20']['contract']['address'] and transaction['input'].startswith('0xa9059cbb'):
+            contract = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
             sender = transaction['from']
             decodedInput = contract.decode_function_input(transaction['input'])
             recipient = decodedInput[1]['_to']
@@ -65,7 +66,8 @@ class ERC20Tunnel(object):
             time.sleep(self.config['erc20']['timeInBetweenChecks'])
 
     def checkBlock(self, heightToCheck, dbCon):
-        print('checking eth block at: ' + str(heightToCheck))
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S:%f")
+        print(timestamp + ' - checking eth block at: ' + str(heightToCheck))
         blockToCheck = self.w3.eth.getBlock(heightToCheck)
         for transaction in blockToCheck['transactions']:
             transactionInfo = self.getTransaction(transaction)
@@ -74,11 +76,11 @@ class ERC20Tunnel(object):
                 cursor = dbCon.cursor()
                 cursor.execute('SELECT targetAddress FROM tunnel WHERE sourceAddress ="' + transactionInfo['sender'] + '"')
                 targetAddress = cursor.fetchall()[0][0]
-                pw.setNode(node=self.config['waves']['node'], chain=self.config['waves']['network'])
+                pw.setNode(node=self.config['waves']['node'], chain=self.config['waves']['network'], chain_id='L')
                 wavesAddress = pw.Address(seed = self.config['waves']['gatewaySeed'])
                 amount = transactionInfo['amount'] - self.config['waves']['fee']
                 if self.txNotYetExecuted(transaction.hex(), dbCon):
-                    tx = wavesAddress.sendAsset(pw.Address(targetAddress), pw.Asset(self.config['waves']['assetId']), int(amount * 10 ** self.config['waves']['decimals']))
+                    tx = wavesAddress.sendAsset(pw.Address(targetAddress), pw.Asset(self.config['waves']['assetId']), int(amount * 10 ** self.config['waves']['decimals']), '', '', 2000000)
                     cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "wavesTxId", "ethTxId") VALUES ("' + transactionInfo['sender'] + '", "' + targetAddress + '", "' + tx['id'] + '", "' + transaction.hex() + '")')
                     cursor.execute('DELETE FROM tunnel WHERE sourceAddress ="' + transactionInfo['sender'] + '" AND targetAddress = "' + targetAddress + '"')
                     dbCon.commit()

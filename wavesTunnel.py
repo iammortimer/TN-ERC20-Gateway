@@ -52,7 +52,7 @@ class WavesTunnel(object):
                 cursor = dbCon.cursor()
                 targetAddress = base58.b58decode(transaction['attachment']).decode()
                 if len(targetAddress) > 1 and self.txNotYetExecuted(transaction['id'], dbCon):
-                    amount = int(transaction['amount'] - (self.config['erc20']['fee'] * 10 ** self.config['erc20']['contract']['decimals']))
+                    amount = int((transaction['amount'] - self.config['erc20']['fee']) * 10 ** self.config['erc20']['contract']['decimals'])
                     token = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
                     nonce = self.w3.eth.getTransactionCount(self.config['erc20']['gatewayAddress'])
                     tx = token.functions.transfer(targetAddress, amount).buildTransaction({
