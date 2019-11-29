@@ -1,6 +1,5 @@
 from web3 import Web3
 import sqlite3 as sqlite
-import datetime
 import time
 import pywaves as pw
 import traceback
@@ -66,8 +65,7 @@ class ERC20Tunnel(object):
             time.sleep(self.config['erc20']['timeInBetweenChecks'])
 
     def checkBlock(self, heightToCheck, dbCon):
-        timestamp = datetime.datetime.now().strftime("%H:%M:%S:%f")
-        print(timestamp + ' - checking eth block at: ' + str(heightToCheck))
+        print('checking eth block at: ' + str(heightToCheck))
         blockToCheck = self.w3.eth.getBlock(heightToCheck)
         for transaction in blockToCheck['transactions']:
             transactionInfo = self.getTransaction(transaction)
@@ -84,6 +82,7 @@ class ERC20Tunnel(object):
                     cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "wavesTxId", "ethTxId") VALUES ("' + transactionInfo['sender'] + '", "' + targetAddress + '", "' + tx['id'] + '", "' + transaction.hex() + '")')
                     cursor.execute('DELETE FROM tunnel WHERE sourceAddress ="' + transactionInfo['sender'] + '" AND targetAddress = "' + targetAddress + '"')
                     dbCon.commit()
+                    print('incomming transfer completed')
 
     def txNotYetExecuted(self, transaction, dbCon):
         cursor = dbCon.cursor()
