@@ -1,1 +1,4 @@
 config.*
+gateway.db
+__pycache__/erc20tunnel.cpython-37.pyc
+__pycache__/wavesTunnel.cpython-37.pyc
