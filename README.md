@@ -1,6 +1,9 @@
-# ERC-20 <-> Waves Platform Gateway Framework
+# ERC-20 <-> TN Platform Gateway Framework
 This framework allows to easily establish a gateway between any ERC-20 token and the
-Waves Platform.
+TN Platform.
+
+Based on Hawky's ERC-20 <-> WAVES Platform Gateway Framework
+
 ## Installation
 Clone this repository and edit the config.json file according to your needs. Install the following dependencies:
 ```
@@ -31,7 +34,7 @@ The config.json file includes all necessary settings that need to be connfigured
         "privateKey": "<private key to the ETH address definend above>"
     },
     "waves": {
-        "gatewayAddress": "<Waves address of the gateway>",
+        "gatewayAddress": "<TN address of the gateway>",
         "gatewaySeed": "<seed of the above devined address>",
         "fee": <the fee you want to collect on the gateway, calculated in the proxy token, e.g., 0.1>,
         "assetId": "<the asset id of the proxy token on the Waves platform>",
