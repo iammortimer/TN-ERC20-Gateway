@@ -67,7 +67,9 @@ class WavesTunnel(object):
                     })
                     signed_tx = self.w3.eth.account.signTransaction(tx, private_key=self.config['erc20']['privateKey'])
                     txId = self.w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-                    cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "wavesTxId", "ethTxId") VALUES ("' + transaction['sender'] + '", "' + targetAddress + '", "' + transaction['id'] + '", "' + txId.hex() + '")')
+                    dateTimeObj = datetime.now()
+                    timestampStr = dateTimeObj.strftime("%d-%b-%Y (%H:%M:%S.%f)")
+                    cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "wavesTxId", "ethTxId", "timestamp", "amount", "amountFee") VALUES ("' + transaction['sender'] + '", "' + targetAddress + '", "' + transaction['id'] + '", "' + txId.hex() + '", "' + timestampStr +  '", "' + amount + '", "' + self.config['erc20']['fee'] + '")')
                     dbCon.commit()
                     print('outgoing transfer completed')
 
