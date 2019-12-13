@@ -30,7 +30,10 @@ createTableExecuted = '''
         sourceAddress text NOT NULL,
         targetAddress text NOT NULL,
         wavesTxId text NOT NULL,
-        ethTxId text NOT NULL
+        ethTxId text NOT NULL,
+        timestamp text,
+        amount real,
+        amountFee real
     );
 '''
 

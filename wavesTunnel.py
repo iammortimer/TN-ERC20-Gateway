@@ -1,6 +1,7 @@
 from web3 import Web3
 import sqlite3 as sqlite
 import requests
+import datetime
 import time
 import base58
 import traceback
@@ -67,7 +68,7 @@ class WavesTunnel(object):
                     })
                     signed_tx = self.w3.eth.account.signTransaction(tx, private_key=self.config['erc20']['privateKey'])
                     txId = self.w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-                    dateTimeObj = datetime.now()
+                    dateTimeObj = datetime.datetime.now()
                     timestampStr = dateTimeObj.strftime("%d-%b-%Y (%H:%M:%S.%f)")
                     cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "wavesTxId", "ethTxId", "timestamp", "amount", "amountFee") VALUES ("' + transaction['sender'] + '", "' + targetAddress + '", "' + transaction['id'] + '", "' + txId.hex() + '", "' + timestampStr +  '", "' + amount + '", "' + self.config['erc20']['fee'] + '")')
                     dbCon.commit()

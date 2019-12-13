@@ -63,7 +63,7 @@ class ERC20Tunnel(object):
                 print('Something went wrong during ETH block iteration: ')
                 print(traceback.TracebackException.from_exception(e))
 
-            #time.sleep(self.config['erc20']['timeInBetweenChecks'])
+            time.sleep(self.config['erc20']['timeInBetweenChecks'])
 
     def checkBlock(self, heightToCheck, dbCon):
         print('checking eth block at: ' + str(heightToCheck))
@@ -80,7 +80,7 @@ class ERC20Tunnel(object):
                 amount = transactionInfo['amount'] - self.config['waves']['fee']
                 if self.txNotYetExecuted(transaction.hex(), dbCon):
                     tx = wavesAddress.sendAsset(pw.Address(targetAddress), pw.Asset(self.config['waves']['assetId']), int(amount * 10 ** self.config['waves']['decimals']), '', '', 2000000)
-                    dateTimeObj = datetime.now()
+                    dateTimeObj = datetime.datetime.now()
                     timestampStr = dateTimeObj.strftime("%d-%b-%Y (%H:%M:%S.%f)")
                     cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "wavesTxId", "ethTxId", "timestamp", "amount", "amountFee") VALUES ("' + transactionInfo['sender'] + '", "' + targetAddress + '", "' + tx['id'] + '", "' + transaction.hex() + '", "' + timestampStr +  '", "' + amount + '", "' + self.config['waves']['fee'] + '")')
                     cursor.execute('DELETE FROM tunnel WHERE sourceAddress ="' + transactionInfo['sender'] + '" AND targetAddress = "' + targetAddress + '"')
