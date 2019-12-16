@@ -82,7 +82,7 @@ class ERC20Tunnel(object):
                     tx = wavesAddress.sendAsset(pw.Address(targetAddress), pw.Asset(self.config['waves']['assetId']), int(amount * 10 ** self.config['waves']['decimals']), '', '', 2000000)
                     dateTimeObj = datetime.datetime.now()
                     timestampStr = dateTimeObj.strftime("%d-%b-%Y (%H:%M:%S.%f)")
-                    cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "wavesTxId", "ethTxId", "timestamp", "amount", "amountFee") VALUES ("' + transactionInfo['sender'] + '", "' + targetAddress + '", "' + tx['id'] + '", "' + transaction.hex() + '", "' + timestampStr +  '", "' + amount + '", "' + self.config['waves']['fee'] + '")')
+                    cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "wavesTxId", "ethTxId", "timestamp", "amount", "amountFee") VALUES ("' + transactionInfo['sender'] + '", "' + targetAddress + '", "' + tx['id'] + '", "' + transaction.hex() + '", "' + timestampStr +  '", "' + str(amount) + '", "' + str(self.config['waves']['fee']) + '")')
                     cursor.execute('DELETE FROM tunnel WHERE sourceAddress ="' + transactionInfo['sender'] + '" AND targetAddress = "' + targetAddress + '"')
                     dbCon.commit()
                     print('incomming transfer completed')

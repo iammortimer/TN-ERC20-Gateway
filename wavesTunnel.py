@@ -57,7 +57,6 @@ class WavesTunnel(object):
                     amount -= self.config['erc20']['fee']
                     amount *= 10 ** self.config['erc20']['contract']['decimals']
                     amount = int(amount)
-                    #amount = int(((transaction['amount'] / 10 ** self.config['waves']['decimals'])  - self.config['erc20']['fee']) * 10 ** self.config['erc20']['contract']['decimals'])
                     token = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
                     nonce = self.w3.eth.getTransactionCount(self.config['erc20']['gatewayAddress'])
                     tx = token.functions.transfer(targetAddress, amount).buildTransaction({
@@ -70,7 +69,7 @@ class WavesTunnel(object):
                     txId = self.w3.eth.sendRawTransaction(signed_tx.rawTransaction)
                     dateTimeObj = datetime.datetime.now()
                     timestampStr = dateTimeObj.strftime("%d-%b-%Y (%H:%M:%S.%f)")
-                    cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "wavesTxId", "ethTxId", "timestamp", "amount", "amountFee") VALUES ("' + transaction['sender'] + '", "' + targetAddress + '", "' + transaction['id'] + '", "' + txId.hex() + '", "' + timestampStr +  '", "' + amount + '", "' + self.config['erc20']['fee'] + '")')
+                    cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "wavesTxId", "ethTxId", "timestamp", "amount", "amountFee") VALUES ("' + transaction['sender'] + '", "' + targetAddress + '", "' + transaction['id'] + '", "' + txId.hex() + '", "' + timestampStr +  '", "' + str(amount) + '", "' + str(self.config['erc20']['fee']) + '")')
                     dbCon.commit()
                     print('outgoing transfer completed')
 
