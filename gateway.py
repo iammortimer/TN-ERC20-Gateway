@@ -2,7 +2,7 @@ import sqlite3 as sqlite
 import json
 import threading
 from erc20tunnel import ERC20Tunnel
-from wavesTunnel import WavesTunnel
+from tnTunnel import TNTunnel
 from flask import Flask, render_template
 
 app = Flask(__name__)
@@ -14,17 +14,21 @@ with open('config.json') as json_file:
 def hello():
     heights = getHeights()
 
-    return render_template('index.html', chainName = config['erc20']['name'],
-                           wavesHeight = heights['Waves'],
+    return render_template('index.html', chainName = config['main']['name'],
+                           tnHeight = heights['TN'],
                            ethHeight = heights['ETH'],
+                           assetID = config['tn']['assetId'],
+                           fee = config['tn']['fee'],
+                           company = config['main']['company'],
+                           email = config['main']['contact-email'],
                            ethAddress = config['erc20']['gatewayAddress'],
-                           wavesAddress = config['waves']['gatewayAddress'])
+                           tnAddress = config['tn']['gatewayAddress'])
 
 @app.route('/heights')
 def getHeights():
     dbCon = sqlite.connect('gateway.db')
 
-    result = dbCon.cursor().execute('SELECT chain, height FROM heights WHERE chain = "Waves" or chain = "ETH"').fetchall()
+    result = dbCon.cursor().execute('SELECT chain, height FROM heights WHERE chain = "TN" or chain = "ETH"').fetchall()
 
     return { result[0][0]: result[0][1], result[1][0]: result[1][1] }
 
@@ -51,10 +55,10 @@ def establishTunnel(sourceAddress, targetAddress):
 
 def main():
     erc20Tunnel = ERC20Tunnel(config)
-    wavesTunnel = WavesTunnel(config)
-    wavesThread = threading.Thread(target=wavesTunnel.iterate)
+    tnTunnel = TNTunnel(config)
+    tnThread = threading.Thread(target=tnTunnel.iterate)
     ercThread = threading.Thread(target=erc20Tunnel.iterate)
-    wavesThread.start()
+    tnThread.start()
     ercThread.start()
     app.run(port=8080, host='0.0.0.0')
 

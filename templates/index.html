@@ -16,7 +16,7 @@
 			  <ul class="navbar-nav">
 				ETH height: {{ ethHeight }}, ETH Gateway Address: {{ ethAddress }}
 				<br />
-				TN height: {{ wavesHeight }}, TN Gateway Address: {{ wavesAddress }}
+				TN height: {{ tnHeight }}, TN Gateway Address: {{ tnAddress }}
 			  </ul>
 			</div>
 		  </nav>
@@ -26,7 +26,7 @@
 		<div class="col-md-12">
 			<div class="jumbotron">
 				<h2>
-					{{chainName}} <-> TN Gateway
+					{{chainName}} <-> Turtle Network Gateway
 				</h2>
 				<p>
 					This is a simple gateway for ERC-20 tokens to the TN Platform. It is based on tunnels. Users can
@@ -40,7 +40,19 @@
 					that should receive the tokens as the description of the transfer and send the tokens to the TN
 					address of the gateway.
 					<p>
-					<h4>DISCLAIMER: Use this gateway at your own risk!!!</h4>
+					ETH Gateway Address: {{ ethAddress }} 
+					<p>  
+					TN Gateway Address: {{ tnAddress }}
+					<p>
+					Official ASSET ID: {{ assetID }}
+					<p>
+					<h5>DISCLAIMER: Erronious sends can only be recovered if they are in gateway controlled wallets.</h5>
+					<p> 
+					<h5> TUNNELS ARE ONE USE ONLY, CREATE ONE PER TRANSACTION </h5>
+					<p> 
+					<h5> Fees: {{ fee }} per transaction, do not send less than {{ fee }} + (your balance you wish to deposit or withdraw) </h5>
+					<p> <p>
+					This gateway is run by {{ company }} - contact us at <a href="mailto:{{ email }}">{{ email }}</a>
 				</p>
 			</div>
 			<div class="row">

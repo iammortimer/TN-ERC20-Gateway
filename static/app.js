@@ -16,9 +16,9 @@ function checkETHAddress(event) {
 function establishTunnel(event) {
     event.preventDefault();
     ethAddress = document.getElementById("ethAddress").value;
-    wavesAddress = document.getElementById("wavesAddress").value;
+    tnAddress = document.getElementById("tnAddress").value;
 
-    fetch('/tunnel/' + ethAddress + '/' + wavesAddress).then(function(response) {
+    fetch('/tunnel/' + ethAddress + '/' + tnAddress).then(function(response) {
         response.json().then(function(result) {
             if (result.successful) {
                 alert('Tunnel successfully established!');

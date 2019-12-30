@@ -29,7 +29,7 @@ createTableExecuted = '''
         id integer PRIMARY KEY,
         sourceAddress text NOT NULL,
         targetAddress text NOT NULL,
-        wavesTxId text NOT NULL,
+        tnTxId text NOT NULL,
         ethTxId text NOT NULL,
         timestamp text,
         amount real,
@@ -45,6 +45,6 @@ cursor.execute(createTunnelTable)
 cursor.execute(createTableExecuted)
 # TODO: edit to start values
 cursor.execute('INSERT INTO heights ("chain", "height") VALUES ("ETH", 8980500)')
-cursor.execute('INSERT INTO heights ("chain", "height") VALUES ("Waves", 832013)')
+cursor.execute('INSERT INTO heights ("chain", "height") VALUES ("TN", 832013)')
 con.commit()
 con.close()

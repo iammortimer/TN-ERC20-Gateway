@@ -75,21 +75,27 @@ class ERC20Tunnel(object):
                 cursor = dbCon.cursor()
                 cursor.execute('SELECT targetAddress FROM tunnel WHERE sourceAddress ="' + transactionInfo['sender'] + '"')
                 targetAddress = cursor.fetchall()[0][0]
-                pw.setNode(node=self.config['waves']['node'], chain=self.config['waves']['network'], chain_id='L')
-                wavesAddress = pw.Address(seed = self.config['waves']['gatewaySeed'])
-                amount = transactionInfo['amount'] - self.config['waves']['fee']
+                pw.setNode(node=self.config['tn']['node'], chain=self.config['tn']['network'], chain_id='L')
+                tnAddress = pw.Address(seed = self.config['tn']['gatewaySeed'])
+                amount = transactionInfo['amount'] - self.config['tn']['fee']
                 if self.txNotYetExecuted(transaction.hex(), dbCon):
-                    tx = wavesAddress.sendAsset(pw.Address(targetAddress), pw.Asset(self.config['waves']['assetId']), int(amount * 10 ** self.config['waves']['decimals']), '', '', 2000000)
+                    try:
+                        addr = pw.Address(targetAddress)
+                        tx = tnAddress.sendAsset(pw.Address(targetAddress), pw.Asset(self.config['tn']['assetId']), int(amount * 10 ** self.config['tn']['decimals']), '', '', 2000000)
+                        print("sended tx"+str(tx))
+                    except Exception as e:
+                        tx = {"id":"invalid attachment"}
+                        print('invalid attachment')                    
                     dateTimeObj = datetime.datetime.now()
                     timestampStr = dateTimeObj.strftime("%d-%b-%Y (%H:%M:%S.%f)")
-                    cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "wavesTxId", "ethTxId", "timestamp", "amount", "amountFee") VALUES ("' + transactionInfo['sender'] + '", "' + targetAddress + '", "' + tx['id'] + '", "' + transaction.hex() + '", "' + timestampStr +  '", "' + str(amount) + '", "' + str(self.config['waves']['fee']) + '")')
+                    cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "tnTxId", "ethTxId", "timestamp", "amount", "amountFee") VALUES ("' + transactionInfo['sender'] + '", "' + targetAddress + '", "' + tx['id'] + '", "' + transaction.hex() + '", "' + timestampStr +  '", "' + str(amount) + '", "' + str(self.config['tn']['fee']) + '")')
                     cursor.execute('DELETE FROM tunnel WHERE sourceAddress ="' + transactionInfo['sender'] + '" AND targetAddress = "' + targetAddress + '"')
                     dbCon.commit()
                     print('incomming transfer completed')
 
     def txNotYetExecuted(self, transaction, dbCon):
         cursor = dbCon.cursor()
-        result = cursor.execute('SELECT wavesTxId FROM executed WHERE ethTxId = "' + transaction + '"').fetchall()
+        result = cursor.execute('SELECT tnTxId FROM executed WHERE ethTxId = "' + transaction + '"').fetchall()
 
         return len(result) == 0
 
