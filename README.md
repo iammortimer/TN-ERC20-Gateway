@@ -20,8 +20,12 @@ python gateway.py
 The config.json file includes all necessary settings that need to be connfigured in order to run a proper gateway:
 ```
 {
-    "erc20": {
+    "main": {
         "name": "<name of the token>",
+        "company": "<company running the gateway>",
+        "contact-email": "<valid e-mail address>"
+    },
+    "erc20": {
         "endpoint": "<http url of your node provider | empty if you want to connect to a local node via IPC>",
         "contract": {
             "address": "<contract address of your token that you want to establish the gateway for>",
@@ -33,8 +37,8 @@ The config.json file includes all necessary settings that need to be connfigured
         "gatewayAddress": "<ETH address of the gateway>",
         "privateKey": "<private key to the ETH address definend above>"
     },
-    "waves": {
-        "gatewayAddress": "<TN address of the gateway>",
+    "tn": {
+        "gatewayAddress": "<tn address of the gateway>",
         "gatewaySeed": "<seed of the above devined address>",
         "fee": <the fee you want to collect on the gateway, calculated in the proxy token, e.g., 0.1>,
         "assetId": "<the asset id of the proxy token on the Waves platform>",
