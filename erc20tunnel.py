@@ -37,12 +37,14 @@ class ERC20Tunnel(object):
         transaction = self.w3.eth.getTransaction(id)
 
         if transaction['to'] == self.config['erc20']['contract']['address'] and transaction['input'].startswith('0xa9059cbb'):
-            contract = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
-            sender = transaction['from']
-            decodedInput = contract.decode_function_input(transaction['input'])
-            recipient = decodedInput[1]['_to']
-            amount = decodedInput[1]['_value'] / 10 ** self.config['erc20']['contract']['decimals']
-            result =  { 'sender': sender, 'function': 'transfer', 'recipient': recipient, 'amount': amount, 'token': self.config['erc20']['contract']['address'] }
+            transactionreceipt = self.w3.eth.getTransactionReceipt(id)
+            if transactionreceipt['status']:
+                contract = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
+                sender = transaction['from']
+                decodedInput = contract.decode_function_input(transaction['input'])
+                recipient = decodedInput[1]['_to']
+                amount = decodedInput[1]['_value'] / 10 ** self.config['erc20']['contract']['decimals']
+                result =  { 'sender': sender, 'function': 'transfer', 'recipient': recipient, 'amount': amount, 'token': self.config['erc20']['contract']['address'] }
 
         return result
 
@@ -74,7 +76,10 @@ class ERC20Tunnel(object):
             if self.checkIfTransacitonValid(transactionInfo):
                 cursor = dbCon.cursor()
                 cursor.execute('SELECT targetAddress FROM tunnel WHERE sourceAddress ="' + transactionInfo['sender'] + '"')
-                targetAddress = cursor.fetchall()[0][0]
+                try:
+                    targetAddress = cursor.fetchall()[0][0]
+                except Exception as e:
+                    targetAddress = 'no_tunnel_found'
                 pw.setNode(node=self.config['tn']['node'], chain=self.config['tn']['network'], chain_id='L')
                 tnAddress = pw.Address(seed = self.config['tn']['gatewaySeed'])
                 amount = transactionInfo['amount'] - self.config['tn']['fee']

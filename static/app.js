@@ -7,7 +7,7 @@ function checkETHAddress(event) {
             if (result.targetAddress == null) {
                 alert('No tunnel defined for source address: ' + result.sourceAddress);
             } else {
-                alert('Tunnel already established from ' + result.sourceAddress + ' to ' + result.targetAddress + '!');
+                alert('Tunnel already established from ' + result.sourceAddress + ' to ' + result.targetAddress + '');
             }
         });
     });
