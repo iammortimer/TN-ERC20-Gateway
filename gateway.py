@@ -48,10 +48,14 @@ def getTunnelForETHAddress(address):
 def establishTunnel(sourceAddress, targetAddress):
     dbCon = sqlite.connect('gateway.db')
 
-    dbCon.cursor().execute('INSERT INTO TUNNEL ("sourceAddress", "targetAddress") VALUES ("' + sourceAddress + '", "' + targetAddress + '")')
-    dbCon.commit()
+    result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = "' + sourceAddress + '"').fetchall()
+    if len(result) == 0:
+        dbCon.cursor().execute('INSERT INTO TUNNEL ("sourceAddress", "targetAddress") VALUES ("' + sourceAddress + '", "' + targetAddress + '")')
+        dbCon.commit()
 
-    return { 'successful': True }
+        return { 'successful': True }
+    else:
+        return { 'successful': False }
 
 def main():
     erc20Tunnel = ERC20Tunnel(config)

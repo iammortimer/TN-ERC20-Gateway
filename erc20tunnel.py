@@ -80,6 +80,7 @@ class ERC20Tunnel(object):
                     targetAddress = cursor.fetchall()[0][0]
                 except Exception as e:
                     targetAddress = 'no_tunnel_found'
+
                 pw.setNode(node=self.config['tn']['node'], chain=self.config['tn']['network'], chain_id='L')
                 tnAddress = pw.Address(seed = self.config['tn']['gatewaySeed'])
                 amount = transactionInfo['amount'] - self.config['tn']['fee']

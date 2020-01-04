@@ -21,7 +21,10 @@ class TNTunnel(object):
 
     def getLatestBlockHeight(self):
         # height - 1 due to NG!
-        latestBlock = requests.get(self.node + '/blocks/height').json()['height'] - 1
+        try:
+            latestBlock = requests.get(self.node + '/blocks/height').json()['height'] - 1
+        except Exception as e:
+            latestBlock = 0
 
         return latestBlock
 

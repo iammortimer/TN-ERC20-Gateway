@@ -23,7 +23,7 @@ function establishTunnel(event) {
             if (result.successful) {
                 alert('Tunnel successfully established!');
             } else {
-                alert('Something went wrong!');
+                alert('Something went wrong! Check if you already created a tunnel for this address!');
             }
         });
     });
