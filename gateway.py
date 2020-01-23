@@ -1,6 +1,7 @@
 import sqlite3 as sqlite
 import json
 import threading
+import setupDB
 from erc20tunnel import ERC20Tunnel
 from tnTunnel import TNTunnel
 from flask import Flask, render_template
@@ -58,6 +59,17 @@ def establishTunnel(sourceAddress, targetAddress):
         return { 'successful': False }
 
 def main():
+    #check db
+    try:
+        dbCon = sqlite.connect('gateway.db')
+        result = dbCon.cursor().execute('SELECT chain, height FROM heights WHERE chain = "TN" or chain = "ETH"').fetchall()
+        dbcon.close()
+        if len(result) == 0:
+            setupDB.initialisedb(config)
+    except:
+        setupDB.createdb()
+        setupDB.initialisedb(config)
+
     erc20Tunnel = ERC20Tunnel(config)
     tnTunnel = TNTunnel(config)
     tnThread = threading.Thread(target=tnTunnel.iterate)
