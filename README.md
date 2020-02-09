@@ -3,7 +3,7 @@
 Inspired by Hawky's Waves-ERC20 Gateway: https://github.com/PyWaves/Waves-ERC20-Gateway
 But rewritten to be published under FOSS license.
 
-This framework allows to easily establish a gateway between any Waves token and the
+This framework allows to easily establish a gateway between any ERC20 token and the
 TN Platform.
 ## Installation
 Clone this repository and edit the config.json file according to your needs. Install the following dependencies:
