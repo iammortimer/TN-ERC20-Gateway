@@ -1,0 +1,33 @@
+body {
+  background-color: #DDD;
+}
+
+h1 {
+  text-align: center;
+}
+
+.table {
+  width: 90vw;
+  margin: auto;
+}
+
+table, th, td {
+  border: 1px solid #777;
+  border-collapse: collapse;
+}
+
+thead {
+  background-color: red;
+  text-align: left;
+}
+
+tbody {
+  background-color: #999;
+}
+
+tbody tr:nth-child(odd){
+  background-color: #BBB;
+}
+tr td:nth-child(even){
+  color: darkblue;
+}

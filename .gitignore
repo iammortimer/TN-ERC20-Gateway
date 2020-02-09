@@ -1,4 +1,8 @@
-config.*
-gateway.db
-__pycache__/erc20tunnel.cpython-37.pyc
-__pycache__/wavesTunnel.cpython-37.pyc
+config.json
+*.db
+__pycache__/*
+.vscode/*
+config.json
+templates/index_old.html
+templates/index_eth.html
+config_run.json

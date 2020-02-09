@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" href="{{ url_for('static', path='/errors.css') }}">
+  <title>Error overview</title>
+</head>
+<body>
+  <h1>Errors</h1>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Timestamp</th>
+        <th>source address</th>
+        <th>target address</th>
+        <th>TN txid</th>
+        <th>Waves txid</th>
+        <th>amount</th>
+        <th>error</th>
+        <th>exception</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for error in errors %}
+      <tr>
+        <td>{{error[0]}}</td>
+        <td>{{error[5]}}</td>
+        <td>{{error[1]}}</td>
+        <td>{{error[2]}}</td>
+        <td><a href="https://explorer.turtlenetwork.eu/tx/{{error[3]}}" target="_blank">{{error[3]}}</a></td>
+        <td>{{error[4]}}</td>
+        <td>{{error[6]}}</td>
+        <td>{{error[7]}}</td>
+        <td>{{error[8]}}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

@@ -1,90 +1,178 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <title>ERC-20 <-> TN Gateway</title>
-	<link href="static/bootstrap.min.css" rel="stylesheet">
-	<link rel="icon" href="static/favicon.ico" type="image/x-icon">
-	<script src="static/app.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" type="text/css" href="/static/index.css">
+  <link href="https://fonts.googleapis.com/css?family=Muli&display=swap" rel="stylesheet">
+	<script src="/static/app.js"></script>
+  <title>{{chainName}} <-> TN Gateway</title>
 </head>
+
 <body>
-<div class="container-fluid">
-	<div className="col-md-12">
-		<div className="page-header">
-		  <nav class="navbar navbar-expand-lg navbar-light bg-light">
-			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-			  <ul class="navbar-nav">
-				ETH height: {{ ethHeight }}, ETH Gateway Address: {{ ethAddress }}
-				<br />
-				TN height: {{ tnHeight }}, TN Gateway Address: {{ tnAddress }}
-			  </ul>
-			</div>
-		  </nav>
-		</div>
-	</div>
-	<div class="row">
-		<div class="col-md-12">
-			<div class="jumbotron">
-				<h2>
-					{{chainName}} <-> Turtle Network Gateway
-				</h2>
-				<p>
-					This is a simple gateway for sending {{chainName}} tokens to the TN Platform. It is based on tunnels. Users can
-					define a tunnel between a source ETH address and a target TN address. Whenever the {{chainName}} token
-					is send from the defined source ETH address to the gateway address, the corresponding amount of
-					tokens are send to the defined TN address on the TN Platform. It is important to notice that
-					tunnels will be removed after they are used. Therefore, if more than one transfer should be done
-					via a tunnel, this tunnel needs to be re-established!
-					<p>
-					For sending tokens from the TN Platform to the Ethereum blockchain, just add the ETH address
-					that should receive the tokens as the description of the transfer and send the tokens to the TN
-					address of the gateway.
-					<p>
-					{{chainName}} Gateway Address: {{ ethAddress }} 
-					<p>  
-					TN Gateway Address: {{ tnAddress }}
-					<p>
-					Official ASSET ID: {{ assetID }}
-					<p>
-					<h5>DISCLAIMER: Erronious sends can only be recovered if they are in gateway controlled wallets.</h5>
-					<p> 
-					<h5> TUNNELS ARE ONE USE ONLY, CREATE ONE PER TRANSACTION </h5>
-					<p> 
-					<h5> Fees: {{ fee }} per transaction, do not send less than {{ fee }} + (your balance you wish to deposit or withdraw) </h5>
-					<p> <p>
-					This gateway is run by {{ company }} - contact us at <a href="mailto:{{ email }}">{{ email }}</a>
-				</p>
-			</div>
-			<div class="row">
-				<div class="col-md-4">
-				</div>
-				<div class="col-md-4">
-					<form role="form">
-						<div class="form-group">
-							<label for="ethAddress">
-								ETH Address
-							</label>
-							<input type="text" class="form-control" id="ethAddress" />
-						</div>
-						<div class="form-group">
-							<label for="tnAddress">
-								TN Address
-							</label>
-							<input type="text" class="form-control" id="tnAddress" />
-						</div>
-						<button onclick="establishTunnel(event)" class="btn btn-primary">
-							Establish Tunnel
-						</button>
-						<button onclick="checkETHAddress(event)" class="btn btn-secondary">
-							Check ETH Tunnel
-						</button>
-					</form>
-				</div>
-				<div class="col-md-4">
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
+  <div class="content">
+    <header class="deskHeader">
+      <div class="logos">
+        <div class="logobg">
+          <img class="logo" src="/static/TUSD.webp" alt={{chainName}} + " Logo">
+        </div>
+        <div class="title">
+          <h1>
+            {{chainName}} ⬌ Gateway
+          </h1>
+        </div>
+        <div class="logobg">
+          <img class="logo" src="/static/tn.png" alt="TN Logo">
+        </div>
+      </div>
+    </header>
+    <header class="header">
+      <div class="title">
+        <h1>
+          {{chainName}} ⬍ Gateway
+        </h1>
+      </div>
+      <div class="logos">
+        <div class="logobg">
+          <img class="logo" src="/static/TUSD.webp" alt={{chainName}} + " Logo">
+        </div>
+        <div class="logobg">
+          <img class="logo" src="/static/tn.png" alt="TN Logo">
+        </div>
+      </div>
+    </header>
+    <div class="description down">
+      <div class="emote">
+        <p>🛈</p>
+      </div>
+      <div class="info">
+        <h2>This is a gateway for exchanging {{chainName}} tokens between the Ethereum and Turtle Network Platform.</h2>
+        <h3>
+					<strong>To Send {{chainName}} to Ethereum Network,</strong> using Turtle Network wallet
+        </h3>
+        <p>
+          - Click "SEND"</br>
+          - Recipient's Address = {{ tnAddress }}</br>
+          - Attachment = only insert your ETH wallet address</br>
+        </p>
+        <h3>
+					<strong>To Send {{chainName}} to Turtle Network,</strong> using Ethereum wallet
+        </h3>
+        <p>
+          - Fill in your source ETH wallet address and the receiving Turtle Network wallet address below</br>
+          - Click "Establish Tunnel"</br>
+          - From your ETH wallet send the {{chainName}} tokens to the gateway wallet</br>
+          - Recipient's Address = {{ ethAddress }}</br>
+          - Tunnels are one time use, they are deleted after a succesfull transfer</br>
+          - If you want to verify a tunnel fill in your ETH wallet address and click "Check ETH Tunnel"</br>
+        </p>
+      </div>
+    </div>
+    <div class="description left">
+      <div class="emote">
+        <p>⇌</p>
+      </div>
+      <form class="form" role="form">
+        <table style="width:100%">
+            <tr>
+                <td>
+                  <label for="ethAddress">
+                    ETH Address
+                  </label>
+                </td>
+                <td>
+                  <label for="tnAddress">
+                    TN Address
+                  </label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                  <input type="text" class="form-control" id="ethAddress" style="width:90%" />
+                </td>
+                <td>
+                  <input type="text" class="form-control" id="tnAddress" style="width:90%" />
+                </td>
+            </tr>
+        </table>
+        <div class="buttons">
+          <button onclick="establishTunnel(event)" class="establish">
+            Establish Tunnel
+          </button>
+          <button onclick="checkETHAddress(event)" class="check">
+            Check ETH Tunnel
+          </button>
+        </div>
+      </form>
+    </div>
+    <div class="description right">
+      <div class="emote">
+        <p>🛈</p>
+      </div>
+      <div class="info">
+        <p class="address">
+          Turtle Network height: <strong>{{ tnHeight }}</strong>, Turtle Network Gateway Address: <strong>{{ tnAddress }}</strong>
+        </p>
+        <p class="address">
+          ETH Network height: <strong>{{ ethHeight }}</strong>, ERC20 Network Gateway Address: <strong>{{ ethAddress }}</strong>
+        </p>
+        <p class="address">
+          {{chainName}} Official ASSET ID: <strong>{{ assetID }}</strong>
+        </p>
+      </div>
+    </div>
+    <div class="description right">
+      <div class="emote">
+        <p>🛈</p>
+      </div>
+      <div class="info">
+        <h3>
+          Fees: 
+        </h3>
+        <table style="width:100%">
+            <tr>
+                <th>Withdraw</th>
+                <th>Deposit</th>
+            </tr>
+            <tr>
+                <td> Total {{ eth_total_fee }} ${{ chainName }} for <strong>Withdraw:</strong></br>
+                    ({{ eth_network_fee }} ${{ chainName }} for network fee)</br>
+                    ({{ eth_gateway_fee }} ${{ chainName }} for gateway fee)</br>
+                    Note: Transaction must be higher than {{ eth_total_fee }} ${{ chainName }}.</br></td>
+                <td> Total {{ tn_total_fee }} ${{ chainName }} for <strong>Deposit:</strong></br>
+                    ({{ tn_network_fee }} ${{ chainName }} for network fee)</br>
+                    ({{ tn_gateway_fee }} ${{ chainName }} for gateway fee)</br>
+                    Note: Transaction must be higher than {{ tn_total_fee }} ${{ chainName }}.</br></td>
+            </tr>
+        </table>
+        </br>
+      </div>
+    </div>
+    <div class="description up">
+      <div class="emote">
+        <p>⚠</p>
+      </div>
+      <div class="disclaimer">
+        <h3>
+          DISCLAIMER: Erronious sends can only be recovered if they are in
+          gateway controlled wallets.</br>
+          Tunnels are one time use, they are deleted after a succesfull transfer.
+        </h3>
+        <h3>
+          <strong>Recovery policy</strong></br>
+          - Please contact support within 3 days of transfer issue.</br>
+          - Minimal amount to recover {{ recovery_amount }} ${{ chainName }}.</br>
+          - Recovery fee on end-user mistake = {{ recovery_fee }}%.</br>
+        </h3>
+        <p class="mail">
+          This gateway is run by {{ company }} - contact us at <a href="mailto:{{ email }}">{{ email }}</a> or Telegram at <a href="{{ telegram }}">{{ telegram }}</a>
+        </p>
+      </div>
+    </div>
+    <a class="freepik" href="https://www.freepik.com/free-photos-vectors/background">Background vector created by pikisuperstar - www.freepik.com</a>
+  </div>
 </body>
+
 </html>

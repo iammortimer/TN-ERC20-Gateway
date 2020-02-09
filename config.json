@@ -1,29 +1,41 @@
 {
     "main": {
-        "name": "<name of the token>",
-        "company": "<company running the gateway>",
-        "contact-email": "<valid e-mail address>"
+        "port": <port number to run the webinterface on>,
+        "name": "Tokenname",
+        "company": "Gateways Ltd",
+        "contact-email": "info@contact.us",
+        "contact-telegram": "https://t.me/TurtleNetwork",
+        "recovery_amount": <minimum recovery amount>,
+        "recovery_fee": <recovery fee in %>,
+        "admin-username": "admin",
+        "admin-password": "admin"
     },
     "erc20": {
-        "endpoint": "<http url of your node provider | empty if you want to connect to a local node via IPC>",
+        "node": "<the eth node you want to connect to>",
         "contract": {
-            "address": "<contract address of your token that you want to establish the gateway for>",
+            "address": "<the address of the contract for the token>",
             "decimals": <number of decimals of the token>
         },
-        "fee": <the fee you want to collect on the gateway, calculated in your token, e.g., 0.1>,
-        "confirmations": <number of confirmations necessary in order to accept a transaction>,
+        "gatewayAddress": "<Waves address of the gateway>",
+        "privateKey": "<privatekey of the above devined address>",
+        "seedenvname" : "<the ENV name to store your private key instead of the field above>",
+        "fee": <the total fee you want to collect on the gateway, calculated in the proxy token, e.g., 0.1>,
+        "gateway_fee": <the gatewway part of the fee calculated in the proxy token, e.g., 0.1>,
+        "network_fee": <the tx part of the fee calculated in the proxy token, e.g., 0.1>,
         "timeInBetweenChecks": <seconds in between a check for a new block>,
-        "gatewayAddress": "<ETH address of the gateway>",
-        "privateKey": "<private key to the ETH address definend above>"
+        "confirmations": <number of confirmations necessary in order to accept a transaction>
     },
     "tn": {
-        "gatewayAddress": "<tn address of the gateway>",
+        "gatewayAddress": "<TN address of the gateway>",
         "gatewaySeed": "<seed of the above devined address>",
+        "seedenvname" : "<the ENV name to store your seed instead of the field above>",
         "fee": <the fee you want to collect on the gateway, calculated in the proxy token, e.g., 0.1>,
-        "assetId": "<the asset id of the proxy token on the Waves platform>",
+        "gateway_fee": <the gatewway part of the fee calculated in the proxy token, e.g., 0.1>,
+        "network_fee": <the tx part of the fee calculated in the proxy token, e.g., 0.1>,
+        "assetId": "<the asset id of the proxy token on the TN platform>",
         "decimals": <number of decimals of the token>,
-        "network": "<Waves network you want to connect to (testnet|stagenent|mainnet)>",
-        "node": "<the waves node you want to connect to>",
+        "network": "<Waves network you want to connect to (testnet|mainnet)>",
+        "node": "<the TN node you want to connect to>",
         "timeInBetweenChecks": <seconds in between a check for a new block>,
         "confirmations": <number of confirmations necessary in order to accept a transaction>
     }

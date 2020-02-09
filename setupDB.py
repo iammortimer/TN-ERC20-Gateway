@@ -3,14 +3,6 @@ import sqlite3 as sqlite
 import requests
 
 def createdb():
-    createTxTable = '''
-        CREATE TABLE IF NOT EXISTS txs (
-            id integer PRIMARY KEY,
-            chain text NOT NULL,
-            tx text NOT NULL
-        );
-    '''
-
     createHeightTable = '''
         CREATE TABLE IF NOT EXISTS heights (
             id integer PRIMARY KEY,
@@ -18,7 +10,6 @@ def createdb():
             height integer
         );
     '''
-
     createTunnelTable = '''
         CREATE TABLE IF NOT EXISTS tunnel (
             id integer PRIMARY KEY,
@@ -26,7 +17,6 @@ def createdb():
             targetAddress text NOT NULL
         );
     '''
-
     createTableExecuted = '''
         CREATE TABLE IF NOT EXISTS executed (
             id integer PRIMARY KEY,
@@ -34,18 +24,33 @@ def createdb():
             targetAddress text NOT NULL,
             tnTxId text NOT NULL,
             ethTxId text NOT NULL,
-            timestamp text,
+            timestamp timestamp
+            default current_timestamp,
             amount real,
             amountFee real
-        );
+    );
+    '''
+    createTableErrors = '''
+        CREATE TABLE IF NOT EXISTS errors (
+            id integer PRIMARY KEY,
+            sourceAddress text ,
+            targetAddress text ,
+            tnTxId text ,
+            ethTxId text ,
+            timestamp timestamp
+            default current_timestamp,
+            amount real,
+            error text,
+            exception text
+    );
     '''
 
     con = sqlite.connect('gateway.db')
     cursor = con.cursor()
-    cursor.execute(createTxTable)
     cursor.execute(createHeightTable)
     cursor.execute(createTunnelTable)
     cursor.execute(createTableExecuted)
+    cursor.execute(createTableErrors)
     con.commit()
     con.close()
 
@@ -54,8 +59,8 @@ def initialisedb(config):
     tnlatestBlock = requests.get(config['tn']['node'] + '/blocks/height').json()['height'] - 1
 
     #get current ETH block:
-    if config['erc20']['endpoint'].startswith('http'):
-        w3 = Web3(Web3.HTTPProvider(config['erc20']['endpoint']))
+    if config['erc20']['node'].startswith('http'):
+        w3 = Web3(Web3.HTTPProvider(config['erc20']['node']))
     else:
         w3 = Web3()
 
