@@ -68,9 +68,9 @@ The config.json file includes all necessary settings that need to be connfigured
 After starting the gateway, it will provide a webpage on the port set in config.json.
 
 ## Usage of the gateway
-This is a simple gateway for TN tokens to the Waves Platform and vice versa. For sending tokens from the Waves Platform to the TN blockchain, just add the TN address that should receive the tokens as the description of the transfer and send the tokens to the Waves address of the gateway.
+This is a simple gateway for TN tokens to the ERC20 Platform and vice versa. For sending tokens from the Etherium Platform to the TN blockchain, fill in your source ETH wallet address and the receiving Turtle Network wallet to create a tunnel. Then send the tokens to the Ethereum address of the gateway.
 
-For sending tokens from the TN Platform to the Waves blockchain, just add the Waves address that should receive the tokens as the description of the transfer and send the tokens to the TN address of the gateway.
+For sending tokens from the TN Platform to the Etherium blockchain, just add the Etherium address that should receive the tokens as the description of the transfer and send the tokens to the TN address of the gateway.
 
 ## Management interface
 After starting the gateway, there are also a couple of management interfaces which are secured by the admin-username and admin-password fields in the config.json:
