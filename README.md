@@ -1,4 +1,4 @@
-# TN <-> Waves Platform Gateway Framework
+# TN <-> ERC20 Platform Gateway Framework
 
 Inspired by Hawky's Waves-ERC20 Gateway: https://github.com/PyWaves/Waves-ERC20-Gateway
 But rewritten to be published under FOSS license.
@@ -32,17 +32,18 @@ The config.json file includes all necessary settings that need to be connfigured
         "admin-username": "admin",
         "admin-password": "admin"
     },
-    "waves": {
+    "erc20": {
+        "node": "<the eth node you want to connect to>",
+        "contract": {
+            "address": "<the address of the contract for the token>",
+            "decimals": <number of decimals of the token>
+        },
         "gatewayAddress": "<Waves address of the gateway>",
-        "gatewaySeed": "<seed of the above devined address>",
-        "seedenvname": "<the ENV name to store your seed instead of the field above>",
-        "fee": <the fee you want to collect on the gateway, calculated in the proxy token, e.g., 0.1>,
+        "privateKey": "<privatekey of the above devined address>",
+        "seedenvname" : "<the ENV name to store your private key instead of the field above>",
+        "fee": <the total fee you want to collect on the gateway, calculated in the proxy token, e.g., 0.1>,
         "gateway_fee": <the gatewway part of the fee calculated in the proxy token, e.g., 0.1>,
         "network_fee": <the tx part of the fee calculated in the proxy token, e.g., 0.1>,
-        "assetId": "<the asset id of the proxy token on the Waves platform>",
-        "decimals": <number of decimals of the token>,
-        "network": "<Waves network you want to connect to (testnet|stagenent|mainnet)>",
-        "node": "<the waves node you want to connect to>",
         "timeInBetweenChecks": <seconds in between a check for a new block>,
         "confirmations": <number of confirmations necessary in order to accept a transaction>
     },
