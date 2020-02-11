@@ -1,4 +1,5 @@
 import sqlite3 as sqlite
+from web3 import Web3
 import json
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -16,6 +17,8 @@ templates = Jinja2Templates(directory="templates")
 
 with open('config.json') as json_file:
     config = json.load(json_file)
+
+w3 = Web3(Web3.HTTPProvider(config['erc20']['node']))
 
 def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = secrets.compare_digest(credentials.username, config["main"]["admin-username"])
@@ -86,9 +89,13 @@ async def createTunnel(sourceAddress, targetAddress):
 
     result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = "' + sourceAddress + '"').fetchall()
     if len(result) == 0:
-        dbCon.cursor().execute('INSERT INTO TUNNEL ("sourceAddress", "targetAddress") VALUES ("' + sourceAddress + '", "' + targetAddress + '")')
-        dbCon.commit()
+        sourceAddress = w3.toChecksumAddress(sourceAddress)
+        if w3.isAddress(sourceAddress):
+            dbCon.cursor().execute('INSERT INTO TUNNEL ("sourceAddress", "targetAddress") VALUES ("' + sourceAddress + '", "' + targetAddress + '")')
+            dbCon.commit()
 
-        return { 'successful': True }
+            return { 'successful': True }
+        else:
+            return { 'successful': False }    
     else:
         return { 'successful': False }    
