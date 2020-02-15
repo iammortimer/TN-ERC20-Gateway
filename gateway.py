@@ -1,3 +1,4 @@
+import re
 import sqlite3 as sqlite
 from web3 import Web3
 import json
@@ -74,6 +75,7 @@ async def getErrors(request: Request, username: str = Depends(get_current_userna
 @app.get('/ethAddress/{address}')
 async def checkTunnel(address):
     dbCon = sqlite.connect('gateway.db')
+    address = re.sub('[\W_]+', '', address)
 
     result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = "' + address + '"').fetchall()
     if len(result) == 0:
@@ -86,6 +88,8 @@ async def checkTunnel(address):
 @app.get('/tunnel/{sourceAddress}/{targetAddress}')
 async def createTunnel(sourceAddress, targetAddress):
     dbCon = sqlite.connect('gateway.db')
+    sourceAddress = re.sub('[\W_]+', '', sourceAddress)
+    targetAddress = re.sub('[\W_]+', '', targetAddress)
 
     result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = "' + sourceAddress + '"').fetchall()
     if len(result) == 0:
