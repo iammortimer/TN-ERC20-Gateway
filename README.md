@@ -78,6 +78,7 @@ For sending tokens from the TN Platform to the Etherium blockchain, just add the
 After starting the gateway, there are also a couple of management interfaces which are secured by the admin-username and admin-password fields in the config.json:
 ```
     /errors: This will show an overview of detected errors during processing of blocks or transferring funds
+    /executed: This will show an overview of executed transactions through the gateway
 ```
 
 # Disclaimer

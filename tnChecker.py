@@ -86,7 +86,7 @@ class TNChecker(object):
 
                             cursor = self.dbCon.cursor()
                             amount /= pow(10, self.config['erc20']['contract']['decimals'])
-                            cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "tnTxId", "ethTxId", "amount", "amountFee") VALUES ("' + transaction['sender'] + '", "' + targetAddress + '", "' + transaction['id'] + '", "' + txId.hex() + '", "' + str(amount) + '", "' + str(self.config['erc20']['fee']) + '")')
+                            cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "tnTxId", "ethTxId", "amount", "amountFee") VALUES ("' + transaction['sender'] + '", "' + targetAddress + '", "' + transaction['id'] + '", "' + txId.hex() + '", "' + str(round(amount)) + '", "' + str(self.config['erc20']['fee']) + '")')
                             self.dbCon.commit()
                             print('send tokens from tn to erc20!')
                     except Exception as e:

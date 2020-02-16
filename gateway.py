@@ -72,12 +72,23 @@ async def getErrors(request: Request, username: str = Depends(get_current_userna
         result = dbCon.cursor().execute('SELECT * FROM errors').fetchall()
         return templates.TemplateResponse("errors.html", {"request": request, "errors": result})
 
+@app.get('/executed')
+async def getErrors(request: Request, username: str = Depends(get_current_username)):
+    if (config["main"]["admin-username"] == "admin" and config["main"]["admin-password"] == "admin"):
+        return {"message": "change the default username and password please!"}
+    
+    if username == config["main"]["admin-username"]:
+        dbCon = sqlite.connect('gateway.db')
+        result = dbCon.cursor().execute('SELECT * FROM executed').fetchall()
+        return templates.TemplateResponse("tx.html", {"request": request, "txs": result})
+
 @app.get('/ethAddress/{address}')
 async def checkTunnel(address):
     dbCon = sqlite.connect('gateway.db')
     address = re.sub('[\W_]+', '', address)
+    values = (address,)
 
-    result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = "' + address + '"').fetchall()
+    result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = ?', values).fetchall()
     if len(result) == 0:
         targetAddress = None
     else:
@@ -90,12 +101,17 @@ async def createTunnel(sourceAddress, targetAddress):
     dbCon = sqlite.connect('gateway.db')
     sourceAddress = re.sub('[\W_]+', '', sourceAddress)
     targetAddress = re.sub('[\W_]+', '', targetAddress)
+    values = (sourceAddress, targetAddress)
 
-    result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = "' + sourceAddress + '"').fetchall()
+    result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = ?', (sourceAddress,)).fetchall()
     if len(result) == 0:
-        sourceAddress = w3.toChecksumAddress(sourceAddress)
+        try:
+            sourceAddress = w3.toChecksumAddress(sourceAddress)
+        except:
+            return { 'successful': False }
+
         if w3.isAddress(sourceAddress):
-            dbCon.cursor().execute('INSERT INTO TUNNEL ("sourceAddress", "targetAddress") VALUES ("' + sourceAddress + '", "' + targetAddress + '")')
+            dbCon.cursor().execute('INSERT INTO TUNNEL ("sourceAddress", "targetAddress") VALUES (?, ?)', values)
             dbCon.commit()
 
             return { 'successful': True }
