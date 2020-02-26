@@ -58,8 +58,9 @@ class TNChecker(object):
         for transaction in block['transactions']:
             if self.checkTx(transaction):
                 targetAddress = base58.b58decode(transaction['attachment']).decode()
+                targetAddress = self.w3.toChecksumAddress(targetAddress)
 
-                if not(targetAddress.startswith('0x')):
+                if not(self.w3.isAddress(targetAddress)):
                     self.faultHandler(transaction, "txerror")
                 else:
                     amount = transaction['amount'] / pow(10, self.config['tn']['decimals'])
