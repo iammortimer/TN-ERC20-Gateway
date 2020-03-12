@@ -45,7 +45,7 @@ The config.json file includes all necessary settings that need to be connfigured
         "gateway_fee": <the gatewway part of the fee calculated in the proxy token, e.g., 0.1>,
         "network_fee": <the tx part of the fee calculated in the proxy token, e.g., 0.1>,
         "gas": <the amount of gas used for each transaction on the ETH network>,
-        "gasprice" : <the gasprice in gwei>,
+        "gasprice" : <the gasprice in gwei or set to 0 for automatic gasprice determination>,
         "timeInBetweenChecks": <seconds in between a check for a new block>,
         "confirmations": <number of confirmations necessary in order to accept a transaction>
     },

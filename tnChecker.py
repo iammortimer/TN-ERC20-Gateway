@@ -71,10 +71,15 @@ class TNChecker(object):
                     try:
                         token = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
                         nonce = self.w3.eth.getTransactionCount(self.config['erc20']['gatewayAddress'])
+                        if self.config['erc20']['gasprice'] > 0:
+                            gasprice = self.w3.toWei(self.config['erc20']['gasprice'], 'gwei')
+                        else:
+                            gasprice = int(self.w3.eth.gasPrice * 1.1)
+
                         tx = token.functions.transfer(targetAddress, amount).buildTransaction({
                             'chainId': 1,
                             'gas': self.config['erc20']['gas'],
-                            'gasPrice': self.w3.toWei(self.config['erc20']['gasprice'], 'gwei'),
+                            'gasPrice': gasprice,
                             'nonce': nonce
                         })
                         signed_tx = self.w3.eth.account.signTransaction(tx, private_key=self.privatekey)
