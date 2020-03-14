@@ -30,7 +30,8 @@ The config.json file includes all necessary settings that need to be connfigured
         "recovery_amount": <minimum recovery amount>,
         "recovery_fee": <recovery fee in %>,
         "admin-username": "admin",
-        "admin-password": "admin"
+        "admin-password": "admin",
+        "disclaimer": "link to disclaimer file online"
     },
     "erc20": {
         "node": "<the eth node you want to connect to>",
