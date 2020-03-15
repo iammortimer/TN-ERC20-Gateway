@@ -40,5 +40,25 @@
       {% endfor %}
     </tbody>
   </table>
+  <br/>
+  <h1>Verified transactions</h1>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Chain</th>
+        <th>tx</th>
+        <th>Block</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for vtx in vtxs %}
+      <tr>
+        <td>{{vtx[1]}}</td>
+        <td>{{vtx[2]}}</td>
+        <td>{{vtx[3]}}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </body>
 </html>

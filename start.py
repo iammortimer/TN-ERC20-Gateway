@@ -21,6 +21,8 @@ def main():
     except:
         setupDB.createdb()
         setupDB.initialisedb(config)
+
+    setupDB.createVerify()
         
     #load and start threads
     tn = TNChecker(config)

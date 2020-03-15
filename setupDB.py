@@ -54,6 +54,21 @@ def createdb():
     con.commit()
     con.close()
 
+def createVerify():
+    createVerifyTable = '''
+        CREATE TABLE IF NOT EXISTS verified (
+            id integer PRIMARY KEY,
+            chain text NOT NULL,
+            tx text NOT NULL,
+            block integer
+        );
+    '''
+    con = sqlite.connect('gateway.db')
+    cursor = con.cursor()
+    cursor.execute(createVerifyTable)
+    con.commit()
+    con.close()
+
 def initialisedb(config):
     #get current TN block:
     tnlatestBlock = requests.get(config['tn']['node'] + '/blocks/height').json()['height'] - 1
