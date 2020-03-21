@@ -129,6 +129,12 @@ async def checkTunnel(address):
 
 @app.get('/tunnel/{sourceAddress}/{targetAddress}')
 async def createTunnel(sourceAddress, targetAddress):
+    pwTN = PyCWaves.PyCWaves()
+    pwTN.setNode(node=config['tn']['node'], chain=config['tn']['network'], chain_id='L')
+
+    if not pwTN.validateAddress(targetAddress):
+            return {'successful': False}
+
     dbCon = sqlite.connect('gateway.db')
     sourceAddress = re.sub('[\W_]+', '', sourceAddress)
     targetAddress = re.sub('[\W_]+', '', targetAddress)
