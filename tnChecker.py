@@ -70,37 +70,40 @@ class TNChecker(object):
                     amount *= pow(10, self.config['erc20']['contract']['decimals'])
                     amount = int(round(amount))
 
-                    try:
-                        token = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
-                        nonce = self.w3.eth.getTransactionCount(self.config['erc20']['gatewayAddress'])
-                        if self.config['erc20']['gasprice'] > 0:
-                            gasprice = self.w3.toWei(self.config['erc20']['gasprice'], 'gwei')
-                        else:
-                            gasprice = int(self.w3.eth.gasPrice * 1.1)
+                    if amount < 0:
+                        self.faultHandler(transaction, "senderror", e='under minimum amount')
+                    else:
+                        try:
+                            token = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
+                            nonce = self.w3.eth.getTransactionCount(self.config['erc20']['gatewayAddress'])
+                            if self.config['erc20']['gasprice'] > 0:
+                                gasprice = self.w3.toWei(self.config['erc20']['gasprice'], 'gwei')
+                            else:
+                                gasprice = int(self.w3.eth.gasPrice * 1.1)
 
-                        tx = token.functions.transfer(targetAddress, amount).buildTransaction({
-                            'chainId': 1,
-                            'gas': self.config['erc20']['gas'],
-                            'gasPrice': gasprice,
-                            'nonce': nonce
-                        })
-                        signed_tx = self.w3.eth.account.signTransaction(tx, private_key=self.privatekey)
-                        txId = self.w3.eth.sendRawTransaction(signed_tx.rawTransaction)
+                            tx = token.functions.transfer(targetAddress, amount).buildTransaction({
+                                'chainId': 1,
+                                'gas': self.config['erc20']['gas'],
+                                'gasPrice': gasprice,
+                                'nonce': nonce
+                            })
+                            signed_tx = self.w3.eth.account.signTransaction(tx, private_key=self.privatekey)
+                            txId = self.w3.eth.sendRawTransaction(signed_tx.rawTransaction)
 
-                        if not(str(txId.hex()).startswith('0x')):
-                            self.faultHandler(transaction, "senderror", e=txId.hex())
-                        else:
-                            print("send tx: " + str(txId.hex()))
+                            if not(str(txId.hex()).startswith('0x')):
+                                self.faultHandler(transaction, "senderror", e=txId.hex())
+                            else:
+                                print("send tx: " + str(txId.hex()))
 
-                            cursor = self.dbCon.cursor()
-                            amount /= pow(10, self.config['erc20']['contract']['decimals'])
-                            cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "tnTxId", "ethTxId", "amount", "amountFee") VALUES ("' + transaction['sender'] + '", "' + targetAddress + '", "' + transaction['id'] + '", "' + txId.hex() + '", "' + str(round(amount)) + '", "' + str(self.config['erc20']['fee']) + '")')
-                            self.dbCon.commit()
-                            print('send tokens from tn to erc20!')
-                    except Exception as e:
-                        self.faultHandler(transaction, "txerror", e=e)
+                                cursor = self.dbCon.cursor()
+                                amount /= pow(10, self.config['erc20']['contract']['decimals'])
+                                cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "tnTxId", "ethTxId", "amount", "amountFee") VALUES ("' + transaction['sender'] + '", "' + targetAddress + '", "' + transaction['id'] + '", "' + txId.hex() + '", "' + str(round(amount)) + '", "' + str(self.config['erc20']['fee']) + '")')
+                                self.dbCon.commit()
+                                print('send tokens from tn to erc20!')
+                        except Exception as e:
+                            self.faultHandler(transaction, "txerror", e=e)
 
-                    self.verifier.verifyOther(txId)
+                        self.verifier.verifyOther(txId)
 
     def checkTx(self, tx):
         #check the transaction

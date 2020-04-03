@@ -5,6 +5,7 @@ from ethtoken.abi import EIP20_ABI
 import PyCWaves
 import json
 from verification import verifier
+import datetime
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -161,6 +162,38 @@ async def createTunnel(sourceAddress, targetAddress):
         else: 
             return { 'successful': True }
 
+@app.get('/dustkey/{targetAddress}')
+async def createTunnel(targetAddress):
+    pwTN = PyCWaves.PyCWaves()
+    pwTN.setNode(node=config['tn']['node'], chain=config['tn']['network'], chain_id='L')
+
+    if not pwTN.validateAddress(targetAddress):
+        return {'successful': False}
+
+    sourceAddress = str(round(datetime.datetime.now().timestamp()))
+    sourceAddress = sourceAddress[-6:]
+
+    dbCon = sqlite.connect('gateway.db')
+    values = (sourceAddress, targetAddress)
+
+    result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = ?', (sourceAddress,)).fetchall()
+    if len(result) == 0:
+        result = dbCon.cursor().execute('SELECT sourceAddress FROM tunnel WHERE targetAddress = ?', (sourceAddress,)).fetchall()
+
+        if len(result) == 0:
+            dbCon.cursor().execute('INSERT INTO TUNNEL ("sourceAddress", "targetAddress") VALUES (?, ?)', values)
+            dbCon.commit()
+
+            return { 'successful': True, 'dustkey': sourceAddress}
+        else:
+            return { 'successful': True, 'dustkey': result[0][0] }
+    else:
+        result = dbCon.cursor().execute('SELECT sourceAddress FROM tunnel WHERE sourceAddress = ? AND targetAddress = ?', values).fetchall()
+        if len(result) == 0:
+            return { 'successful': False }
+        else: 
+            return { 'successful': True, 'dustkey': result[0][0] }
+
 @app.get("/api/fullinfo")
 async def api_fullinfo(request: Request):
     heights = await getHeights()
@@ -189,7 +222,8 @@ async def api_fullinfo(request: Request):
             "other_balance": otherBalance,
             "minAmount": config['main']['min'],
             "maxAmount": config['main']['max'],
-            "type": "tunnel"}
+            "type": "tunnel",
+            "usageinfo": ""}
 
 @app.get("/api/deposit/{tnAddress}")
 async def api_depositCheck(tnAddress):

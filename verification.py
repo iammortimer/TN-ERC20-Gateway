@@ -6,7 +6,7 @@ from web3 import Web3
 class verifier(object):
     def __init__(self, config):
         self.config = config
-        self.dbCon = sqlite.connect('gateway.db')
+        self.dbCon = sqlite.connect('gateway.db', check_same_thread=False)
 
         self.w3 = Web3(Web3.HTTPProvider(self.config['erc20']['node']))
 
