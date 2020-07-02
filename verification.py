@@ -103,3 +103,81 @@ class verifier(object):
                         return {'txVerified': True, 'tx': tx[0][0], 'block': result[0][0]} 
                     else:
                         return {'txVerified': False, 'tx': tx[0][0], 'block': result[0][0]} 
+
+    def checkTXs(self, address):
+        if len(address) == 0:
+            cursor = self.dbCon.cursor()
+            sql = "SELECT e.sourceAddress, e.targetAddress, e.tnTxId, e.ethTxId as 'OtherTxId', v.block as 'TNVerBlock', v2.block as 'OtherVerBlock', e.amount, CASE WHEN e.targetAddress LIKE '3J%' THEN 'Deposit' ELSE 'Withdraw' END 'TypeTX', " \
+            "CASE WHEN e.targetAddress LIKE '3J%' AND v.block IS NOT NULL THEN 'verified' WHEN e.targetAddress NOT LIKE '3J%' AND v2.block IS NOT NULL AND v2.block IS NOT 0 THEN 'verified' ELSE 'unverified' END 'Status' " \
+            "FROM executed e LEFT JOIN verified v ON e.tnTxId = v.tx LEFT JOIN verified v2 ON e.ethTxId = v2.tx "
+            cursor.execute(sql)
+
+            tx = [dict((cursor.description[i][0], value) for i, value in enumerate(row)) for row in cursor.fetchall()]
+            cursor.connection.close()
+
+            if len(tx) == 0:
+                return {'error': 'no tx found'}
+            else:
+                return tx
+        else:
+            if not self.pwTN.validateAddress(address):
+                return {'error': 'invalid address'}
+            else:
+                cursor = self.dbCon.cursor()
+                sql = "SELECT e.sourceAddress, e.targetAddress, e.tnTxId, e.ethTxId as 'OtherTxId', v.block as 'TNVerBlock', v2.block as 'OtherVerBlock', e.amount, CASE WHEN e.targetAddress LIKE '3J%' THEN 'Deposit' ELSE 'Withdraw' END 'TypeTX', " \
+                "CASE WHEN e.targetAddress LIKE '3J%' AND v.block IS NOT NULL THEN 'verified' WHEN e.targetAddress NOT LIKE '3J%' AND v2.block IS NOT NULL AND v2.block IS NOT 0 THEN 'verified' ELSE 'unverified' END 'Status' " \
+                "FROM executed e LEFT JOIN verified v ON e.tnTxId = v.tx LEFT JOIN verified v2 ON e.ethTxId = v2.tx WHERE (e.sourceAddress = ? or e.targetAddress = ?)"
+                cursor.execute(sql, (address, address))
+
+                tx = [dict((cursor.description[i][0], value) for i, value in enumerate(row)) for row in cursor.fetchall()]
+                cursor.connection.close()
+
+                if len(tx) == 0:
+                    return {'error': 'no tx found'}
+                else:
+                    return tx
+
+    def getFees(self, fromdate, todate):
+        from datetime import timedelta
+        import datetime
+
+        #check date notation
+        if len(fromdate) != 0:
+            fromyear,frommonth,fromday = fromdate.split('-')
+
+            isValidFromDate = True
+            try :
+                datetime.datetime(int(fromyear),int(frommonth),int(fromday))
+            except ValueError :
+                isValidFromDate = False
+        else:
+            isValidFromDate = False
+
+        if len(todate) != 0:
+            toyear,tomonth,today = todate.split('-')
+
+            isValidtoDate = True
+            try :
+                datetime.datetime(int(toyear),int(tomonth),int(today))
+            except ValueError :
+                isValidtoDate = False
+        else:
+            isValidtoDate = False
+
+        if not isValidFromDate:
+            fromdate = '1990-01-01'
+    
+        if not isValidtoDate:
+            todat = datetime.date.today() + timedelta(days=1)
+            todate = todat.strftime('%Y-%m-%d')
+        
+        dbCon = sqlite.connect('gateway.db')
+        values = (fromdate, todate)
+
+        result = dbCon.cursor().execute("SELECT SUM(amountFee) as totalFee from executed WHERE timestamp > ? and timestamp < ?", values).fetchall()
+        if len(result) == 0:
+            Fees = 0
+        else:
+            Fees = result[0][0]
+
+        return { 'totalFees': Fees }

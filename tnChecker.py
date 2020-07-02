@@ -70,7 +70,7 @@ class TNChecker(object):
                     amount *= pow(10, self.config['erc20']['contract']['decimals'])
                     amount = int(round(amount))
 
-                    if amount < 0:
+                    if amount <= 0:
                         self.faultHandler(transaction, "senderror", e='under minimum amount')
                     else:
                         try:

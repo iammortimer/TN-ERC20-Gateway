@@ -41,7 +41,7 @@ class ETHChecker(object):
 
     def run(self):
         #main routine to run continuesly
-        print('started checking tn blocks at: ' + str(self.lastScannedBlock))
+        print('started checking ETH blocks at: ' + str(self.lastScannedBlock))
 
         self.dbCon = sqlite.connect('gateway.db')
         while True:
@@ -62,67 +62,71 @@ class ETHChecker(object):
             time.sleep(self.config['erc20']['timeInBetweenChecks'])
 
     def checkBlock(self, heightToCheck):
-        #check content of the block for valid transactions
-        block = self.w3.eth.getBlock(heightToCheck)
-        for transaction in block['transactions']:
-            txInfo = self.checkTx(transaction)
+        cursor = self.dbCon.cursor()
+        amount_tunnels = cursor.execute('SELECT * FROM tunnel').fetchall()
 
-            if txInfo is not None:
-                txContinue = False
-                cursor = self.dbCon.cursor()
-                sourceAddress = txInfo['sender']
-                res = cursor.execute('SELECT targetAddress FROM tunnel WHERE sourceAddress ="' + sourceAddress + '"').fetchall()
-                if len(res) == 0:
-                    sourceAddress = str(txInfo['amount'])[-6:]
+        if len(amount_tunnels) != 0:
+            #check content of the block for valid transactions
+            block = self.w3.eth.getBlock(heightToCheck)
+            for transaction in block['transactions']:
+                txInfo = self.checkTx(transaction)
+
+                if txInfo is not None:
+                    txContinue = False
+                    cursor = self.dbCon.cursor()
+                    sourceAddress = txInfo['sender']
                     res = cursor.execute('SELECT targetAddress FROM tunnel WHERE sourceAddress ="' + sourceAddress + '"').fetchall()
-
                     if len(res) == 0:
-                        self.faultHandler(txInfo, 'notunnel')
+                        sourceAddress = str(txInfo['amount'])[-6:]
+                        res = cursor.execute('SELECT targetAddress FROM tunnel WHERE sourceAddress ="' + sourceAddress + '"').fetchall()
+
+                        if len(res) == 0:
+                            self.faultHandler(txInfo, 'notunnel')
+                        else:
+                            txContinue = True
                     else:
                         txContinue = True
-                else:
-                    txContinue = True
 
-                if txContinue:
-                    targetAddress = res[0][0]
-                    amount = txInfo['amount']
-                    amount -= self.config['tn']['fee']
-                    amount *= pow(10, self.config['tn']['decimals'])
-                    amount = int(round(amount))
+                    if txContinue:
+                        targetAddress = res[0][0]
+                        amount = txInfo['amount']
+                        amount -= self.config['tn']['fee']
+                        amount *= pow(10, self.config['tn']['decimals'])
+                        amount = int(round(amount))
 
-                    if amount < 0:
-                        txInfo['recipient'] = targetAddress
-                        self.faultHandler(txInfo, "senderror", e='under minimum amount')
-                        cursor = self.dbCon.cursor()
-                        cursor.execute('DELETE FROM tunnel WHERE sourceAddress = "' + sourceAddress + '" and targetAddress = "' + targetAddress + '"')
-                        self.dbCon.commit()
-                    else:
-                        try:
-                            addr = self.pwTN.Address(targetAddress)
-                            if self.config['tn']['assetId'] == 'TN':
-                                tx = self.tnAddress.sendWaves(addr, amount, 'Thanks for using our service!', txFee=2000000)
-                            else:
-                                tx = self.tnAddress.sendAsset(addr, self.tnAsset, amount, 'Thanks for using our service!', txFee=2000000)
+                        if amount <= 0:
+                            txInfo['recipient'] = targetAddress
+                            self.faultHandler(txInfo, "senderror", e='under minimum amount')
+                            cursor = self.dbCon.cursor()
+                            cursor.execute('DELETE FROM tunnel WHERE sourceAddress = "' + sourceAddress + '" and targetAddress = "' + targetAddress + '"')
+                            self.dbCon.commit()
+                        else:
+                            try:
+                                addr = self.pwTN.Address(targetAddress)
+                                if self.config['tn']['assetId'] == 'TN':
+                                    tx = self.tnAddress.sendWaves(addr, amount, 'Thanks for using our service!', txFee=2000000)
+                                else:
+                                    tx = self.tnAddress.sendAsset(addr, self.tnAsset, amount, 'Thanks for using our service!', txFee=2000000)
 
-                            if 'error' in tx:
-                                self.faultHandler(txInfo, "senderror", e=tx['message'])
-                            else:
-                                print("send tx: " + str(tx))
+                                if 'error' in tx:
+                                    self.faultHandler(txInfo, "senderror", e=tx['message'])
+                                else:
+                                    print("send tx: " + str(tx))
 
-                                cursor = self.dbCon.cursor()
-                                amount /= pow(10, self.config['tn']['decimals'])
-                                cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "ethTxId", "tnTxId", "amount", "amountFee") VALUES ("' + txInfo['sender'] + '", "' + targetAddress + '", "' + transaction.hex() + '", "' + tx['id'] + '", "' + str(round(amount)) + '", "' + str(self.config['tn']['fee']) + '")')
-                                self.dbCon.commit()
-                                print('send tokens from waves to tn!')
+                                    cursor = self.dbCon.cursor()
+                                    amount /= pow(10, self.config['tn']['decimals'])
+                                    cursor.execute('INSERT INTO executed ("sourceAddress", "targetAddress", "ethTxId", "tnTxId", "amount", "amountFee") VALUES ("' + txInfo['sender'] + '", "' + targetAddress + '", "' + transaction.hex() + '", "' + tx['id'] + '", "' + str(round(amount)) + '", "' + str(self.config['tn']['fee']) + '")')
+                                    self.dbCon.commit()
+                                    print('send tokens from eth to tn!')
 
-                                cursor = self.dbCon.cursor()
-                                cursor.execute('DELETE FROM tunnel WHERE sourceAddress = "' + txInfo['sender'] + '" and targetAddress = "' + targetAddress + '"')
-                                self.dbCon.commit()
-                                
-                        except Exception as e:
-                            self.faultHandler(txInfo, "txerror", e=e)
+                                    cursor = self.dbCon.cursor()
+                                    cursor.execute('DELETE FROM tunnel WHERE sourceAddress = "' + txInfo['sender'] + '" and targetAddress = "' + targetAddress + '"')
+                                    self.dbCon.commit()
+                                    
+                            except Exception as e:
+                                self.faultHandler(txInfo, "txerror", e=e)
 
-                        self.verifier.verifyTN(tx)
+                            self.verifier.verifyTN(tx)
 
     def checkTx(self, tx):
         #check the transaction
@@ -134,7 +138,14 @@ class ETHChecker(object):
             if transactionreceipt['status']:
                 contract = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
                 sender = transaction['from']
-                decodedInput = contract.decode_function_input(transaction['input'])
+
+                try:
+                    decodedInput = contract.decode_function_input(transaction['input'])
+                except Exception as e:
+                    print('Something went wrong during ETH block iteration at block ' + str(self.lastScannedBlock))
+                    print(traceback.TracebackException.from_exception(e))
+                    return result
+                
                 recipient = decodedInput[1]['_to']
                 if recipient == self.config['erc20']['gatewayAddress']:
                     amount = decodedInput[1]['_value'] / 10 ** self.config['erc20']['contract']['decimals']

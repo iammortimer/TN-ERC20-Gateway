@@ -6,6 +6,7 @@ import PyCWaves
 import json
 from verification import verifier
 import datetime
+import os
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -130,24 +131,25 @@ async def checkTunnel(address):
 
 @app.get('/tunnel/{sourceAddress}/{targetAddress}')
 async def createTunnel(sourceAddress, targetAddress):
+    dbCon = sqlite.connect('gateway.db')
+    sourceAddress = re.sub('[\W_]+', '', sourceAddress)
+    targetAddress = re.sub('[\W_]+', '', targetAddress)
+
     pwTN = PyCWaves.PyCWaves()
     pwTN.setNode(node=config['tn']['node'], chain=config['tn']['network'], chain_id='L')
 
     if not pwTN.validateAddress(targetAddress):
-            return {'successful': False}
+        return {'successful': False}
 
-    dbCon = sqlite.connect('gateway.db')
-    sourceAddress = re.sub('[\W_]+', '', sourceAddress)
-    targetAddress = re.sub('[\W_]+', '', targetAddress)
+    try:
+        sourceAddress = w3.toChecksumAddress(sourceAddress)
+    except:
+        return { 'successful': False }
+
     values = (sourceAddress, targetAddress)
 
     result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = ?', (sourceAddress,)).fetchall()
     if len(result) == 0:
-        try:
-            sourceAddress = w3.toChecksumAddress(sourceAddress)
-        except:
-            return { 'successful': False }
-
         if w3.isAddress(sourceAddress):
             dbCon.cursor().execute('INSERT INTO TUNNEL ("sourceAddress", "targetAddress") VALUES (?, ?)', values)
             dbCon.commit()
@@ -161,6 +163,28 @@ async def createTunnel(sourceAddress, targetAddress):
             return { 'successful': False }
         else: 
             return { 'successful': True }
+
+@app.get('/deltunnel/{sourceAddress}/{targetAddress}')
+async def deleteTunnel(sourceAddress, targetAddress):
+    dbCon = sqlite.connect('gateway.db')
+    sourceAddress = re.sub('[\W_]+', '', sourceAddress)
+    targetAddress = re.sub('[\W_]+', '', targetAddress)
+
+    try:
+        sourceAddress = w3.toChecksumAddress(sourceAddress)
+    except:
+        return { 'successful': False }
+
+    values = (sourceAddress, targetAddress)
+
+    result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = ? AND targetAddress = ?', values).fetchall()
+    if len(result) == 0:
+        return { 'successful': False }
+    else: 
+        dbCon.cursor().execute('DELETE FROM TUNNEL WHERE sourceAddress = ? AND targetAddress = ?', values)
+        dbCon.commit()
+
+        return { 'successful': True }
 
 @app.get('/dustkey/{targetAddress}')
 async def createTunnel(targetAddress):
@@ -216,7 +240,9 @@ async def api_fullinfo(request: Request):
             "otherHeight": heights['ETH'],
             "tnHeight": heights['TN'],
             "tnAddress": config['tn']['gatewayAddress'],
+            "tnColdAddress": config['tn']['coldwallet'],
             "otherAddress": config['erc20']['gatewayAddress'],
+            "otherNetwork": config['erc20']['network'],
             "disclaimer": config['main']['disclaimer'],
             "tn_balance": tnBalance,
             "other_balance": otherBalance,
@@ -236,5 +262,41 @@ async def api_depositCheck(tnAddress):
 async def api_wdCheck(tnAddress):
     checkit = verifier(config)
     result = checkit.checkWD(address=tnAddress)
+
+    return result
+
+@app.get("/api/checktxs/{tnAddress}")
+async def api_checktxs(tnAddress):
+    checkit = verifier(config)
+
+    result = checkit.checkTXs(address=tnAddress)
+
+    return result
+
+@app.get("/api/checktxs")
+async def api_checktxs():
+    checkit = verifier(config)
+    result = checkit.checkTXs(address='')
+
+    return result
+
+@app.get('/fees/{fromdate}/{todate}')
+async def api_getFees(fromdate, todate):
+    checkit = verifier(config)
+    result = checkit.getFees(fromdate, todate)
+
+    return result
+
+@app.get('/fees/{fromdate}')
+async def api_getFees(fromdate):
+    checkit = verifier(config)
+    result = checkit.getFees(fromdate, '')
+
+    return result
+
+@app.get('/fees')
+async def api_getFees():
+    checkit = verifier(config)
+    result = checkit.getFees('','')
 
     return result
