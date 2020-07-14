@@ -6,16 +6,13 @@ But rewritten to be published under FOSS license.
 This framework allows to easily establish a gateway between any ERC20 token and the
 TN Platform.
 ## Installation
-Clone this repository and edit the config.json file according to your needs. Install the following dependencies:
+Clone this repository and edit the config.json file according to your needs. Install the dependencies in requirements.txt via:
 ```
-pycwaves
-fastapi[all]
-jinja2
-aiofiles
+pip3 install -r requirements.txt
 ```
 via pip and run the gateway by
 ```
-python start.py
+python3 start.py
 ```
 ## Configuration of the config file
 The config.json file includes all necessary settings that need to be connfigured in order to run a proper gateway:
@@ -41,21 +38,24 @@ The config.json file includes all necessary settings that need to be connfigured
             "address": "<the address of the contract for the token>",
             "decimals": <number of decimals of the token>
         },
-        "gatewayAddress": "<Waves address of the gateway>",
+        "gatewayAddress": "<ETH address of the gateway>",
         "privateKey": "<privatekey of the above devined address>",
+        "coldwallet": "<ETH address of the gateway's cold wallet (if in use)>",
         "seedenvname" : "<the ENV name to store your private key instead of the field above>",
         "fee": <the total fee you want to collect on the gateway, calculated in the proxy token, e.g., 0.1>,
-        "gateway_fee": <the gatewway part of the fee calculated in the proxy token, e.g., 0.1>,
-        "network_fee": <the tx part of the fee calculated in the proxy token, e.g., 0.1>,
         "gas": <the amount of gas used for each transaction on the ETH network>,
         "gasprice" : <the gasprice in gwei or set to 0 for automatic gasprice determination>,
+        "gateway_fee": <the gatewway part of the fee calculated in the proxy token, e.g., 0.1>,
+        "network_fee": <the tx part of the fee calculated in the proxy token, e.g., 0.1>,
         "timeInBetweenChecks": <seconds in between a check for a new block>,
-        "confirmations": <number of confirmations necessary in order to accept a transaction>
+        "confirmations": <number of confirmations necessary in order to accept a transaction>,
+        "network": "Ethereum"
     },
     "tn": {
         "gatewayAddress": "<TN address of the gateway>",
         "gatewaySeed": "<seed of the above devined address>",
-        "seedenvname": "<the ENV name to store your seed instead of the field above>",
+        "coldwallet": "<TN address of the gateway's cold wallet (if in use)>",
+        "seedenvname" : "<the ENV name to store your seed instead of the field above>",
         "fee": <the fee you want to collect on the gateway, calculated in the proxy token, e.g., 0.1>,
         "gateway_fee": <the gatewway part of the fee calculated in the proxy token, e.g., 0.1>,
         "network_fee": <the tx part of the fee calculated in the proxy token, e.g., 0.1>,

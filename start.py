@@ -7,7 +7,7 @@ import setupDB
 from tnChecker import TNChecker
 from ethChecker import ETHChecker
 
-with open('config.json') as json_file:
+with open('config_run.json') as json_file:
     config = json.load(json_file)
 
 def main():
@@ -15,7 +15,6 @@ def main():
     try:
         dbCon = sqlite.connect('gateway.db')
         result = dbCon.cursor().execute('SELECT chain, height FROM heights WHERE chain = "TN" or chain = "ETH"').fetchall()
-        #dbcon.close()
         if len(result) == 0:
             setupDB.initialisedb(config)
     except:

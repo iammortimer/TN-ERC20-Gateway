@@ -1,10 +1,9 @@
 import re
-import sqlite3 as sqlite
-from web3 import Web3
-from ethtoken.abi import EIP20_ABI
-import PyCWaves
 import json
 from verification import verifier
+from dbClass import dbCalls
+from otherClass import otherCalls
+from tnClass import tnCalls
 import datetime
 import os
 
@@ -31,10 +30,12 @@ security = HTTPBasic()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-with open('config.json') as json_file:
+with open('config_run.json') as json_file:
     config = json.load(json_file)
 
-w3 = Web3(Web3.HTTPProvider(config['erc20']['node']))
+dbc = dbCalls(config)
+tnc = tnCalls(config)
+otc = otherCalls(config)
 
 def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = secrets.compare_digest(credentials.username, config["main"]["admin-username"])
@@ -48,20 +49,10 @@ def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
     return credentials.username
 
 def get_tnBalance():
-    pwTN = PyCWaves.PyCWaves()
-    pwTN.THROW_EXCEPTION_ON_ERROR = True
-    pwTN.setNode(node=config['tn']['node'], chain=config['tn']['network'], chain_id='L')
-    seed = os.getenv(config['tn']['seedenvname'], config['tn']['gatewaySeed'])
-    tnAddress = pwTN.Address(seed=seed)
-    myBalance = tnAddress.balance(assetId=config['tn']['assetId'])
-    myBalance /= pow(10, config['tn']['decimals'])
-    return int(round(myBalance))
+    return tnc.currentBalance()
 
 def get_otherBalance():
-    contract = w3.eth.contract(address=config['erc20']['contract']['address'], abi=EIP20_ABI)
-    balance = contract.functions.balanceOf(config['erc20']['gatewayAddress']).call()
-    balance /= pow(10, config['erc20']['contract']['decimals'])
-    return int(round(balance))
+    return otc.currentBalance()
 
 
 @app.get("/")
@@ -90,8 +81,7 @@ async def index(request: Request):
 
 @app.get('/heights')
 async def getHeights():
-    dbCon = sqlite.connect('gateway.db')
-    result = dbCon.cursor().execute('SELECT chain, height FROM heights WHERE chain = "ETH" or chain = "TN"').fetchall()
+    result = dbc.getHeights()
     return { result[0][0]: result[0][1], result[1][0]: result[1][1] }
 
 @app.get('/errors')
@@ -100,8 +90,7 @@ async def getErrors(request: Request, username: str = Depends(get_current_userna
         return {"message": "change the default username and password please!"}
     
     if username == config["main"]["admin-username"]:
-        dbCon = sqlite.connect('gateway.db')
-        result = dbCon.cursor().execute('SELECT * FROM errors').fetchall()
+        result = dbc.getErrors()
         return templates.TemplateResponse("errors.html", {"request": request, "errors": result})
 
 @app.get('/executed')
@@ -110,113 +99,70 @@ async def getErrors(request: Request, username: str = Depends(get_current_userna
         return {"message": "change the default username and password please!"}
     
     if username == config["main"]["admin-username"]:
-        dbCon = sqlite.connect('gateway.db')
-        result = dbCon.cursor().execute('SELECT * FROM executed').fetchall()
-        result2 = dbCon.cursor().execute('SELECT * FROM verified').fetchall()
+        result = dbc.getExecutedAll()
+        result2 = dbc.getVerifiedAll()
         return templates.TemplateResponse("tx.html", {"request": request, "txs": result, "vtxs": result2})
 
 @app.get('/ethAddress/{address}')
 async def checkTunnel(address):
-    dbCon = sqlite.connect('gateway.db')
     address = re.sub('[\W_]+', '', address)
-    values = (address,)
 
-    result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = ?', values).fetchall()
+    result = dbc.getTargetAddress(address)
     if len(result) == 0:
         targetAddress = None
     else:
-        targetAddress = result[0][0]
+        targetAddress = result
 
     return { 'sourceAddress': address, 'targetAddress': targetAddress }
 
 @app.get('/tunnel/{sourceAddress}/{targetAddress}')
 async def createTunnel(sourceAddress, targetAddress):
-    dbCon = sqlite.connect('gateway.db')
     sourceAddress = re.sub('[\W_]+', '', sourceAddress)
     targetAddress = re.sub('[\W_]+', '', targetAddress)
 
-    pwTN = PyCWaves.PyCWaves()
-    pwTN.setNode(node=config['tn']['node'], chain=config['tn']['network'], chain_id='L')
-
-    if not pwTN.validateAddress(targetAddress):
+    if not tnc.validateAddress(targetAddress):
         return {'successful': False}
 
-    try:
-        sourceAddress = w3.toChecksumAddress(sourceAddress)
-    except:
+    if not otc.validateAddress(sourceAddress):
         return { 'successful': False }
 
-    values = (sourceAddress, targetAddress)
+    sourceAddress = otc.normalizeAddress(sourceAddress)
 
-    result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = ?', (sourceAddress,)).fetchall()
+    result = dbc.getTargetAddress(sourceAddress)
     if len(result) == 0:
-        if w3.isAddress(sourceAddress):
-            dbCon.cursor().execute('INSERT INTO TUNNEL ("sourceAddress", "targetAddress") VALUES (?, ?)', values)
-            dbCon.commit()
+        dbc.insTunnel("created", sourceAddress, targetAddress)
 
-            return { 'successful': True }
-        else:
-            return { 'successful': False }    
+        return { 'successful': True }
     else:
-        result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = ? AND targetAddress = ?', values).fetchall()
-        if len(result) == 0:
+        if result != targetAddress:
             return { 'successful': False }
         else: 
             return { 'successful': True }
 
-@app.get('/deltunnel/{sourceAddress}/{targetAddress}')
-async def deleteTunnel(sourceAddress, targetAddress):
-    dbCon = sqlite.connect('gateway.db')
-    sourceAddress = re.sub('[\W_]+', '', sourceAddress)
-    targetAddress = re.sub('[\W_]+', '', targetAddress)
-
-    try:
-        sourceAddress = w3.toChecksumAddress(sourceAddress)
-    except:
-        return { 'successful': False }
-
-    values = (sourceAddress, targetAddress)
-
-    result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = ? AND targetAddress = ?', values).fetchall()
-    if len(result) == 0:
-        return { 'successful': False }
-    else: 
-        dbCon.cursor().execute('DELETE FROM TUNNEL WHERE sourceAddress = ? AND targetAddress = ?', values)
-        dbCon.commit()
-
-        return { 'successful': True }
-
 @app.get('/dustkey/{targetAddress}')
 async def createTunnel(targetAddress):
-    pwTN = PyCWaves.PyCWaves()
-    pwTN.setNode(node=config['tn']['node'], chain=config['tn']['network'], chain_id='L')
-
-    if not pwTN.validateAddress(targetAddress):
+    if not tnc.validateAddress(targetAddress):
         return {'successful': False}
 
     sourceAddress = str(round(datetime.datetime.now().timestamp()))
     sourceAddress = sourceAddress[-6:]
 
-    dbCon = sqlite.connect('gateway.db')
-    values = (sourceAddress, targetAddress)
-
-    result = dbCon.cursor().execute('SELECT targetAddress FROM tunnel WHERE sourceAddress = ?', (sourceAddress,)).fetchall()
+    result = dbc.getTargetAddress(sourceAddress)
     if len(result) == 0:
-        result = dbCon.cursor().execute('SELECT sourceAddress FROM tunnel WHERE targetAddress = ?', (sourceAddress,)).fetchall()
+        result = dbc.getSourceAddress(targetAddress)
 
         if len(result) == 0:
-            dbCon.cursor().execute('INSERT INTO TUNNEL ("sourceAddress", "targetAddress") VALUES (?, ?)', values)
-            dbCon.commit()
+            dbc.insTunnel("created", sourceAddress, targetAddress)
 
             return { 'successful': True, 'dustkey': sourceAddress}
         else:
-            return { 'successful': True, 'dustkey': result[0][0] }
+            return { 'successful': True, 'dustkey': result }
     else:
-        result = dbCon.cursor().execute('SELECT sourceAddress FROM tunnel WHERE sourceAddress = ? AND targetAddress = ?', values).fetchall()
+        result = dbc.getSourceAddress(targetAddress)
         if len(result) == 0:
             return { 'successful': False }
         else: 
-            return { 'successful': True, 'dustkey': result[0][0] }
+            return { 'successful': True, 'dustkey': result }
 
 @app.get("/api/fullinfo")
 async def api_fullinfo(request: Request):
@@ -267,36 +213,20 @@ async def api_wdCheck(tnAddress):
 
 @app.get("/api/checktxs/{tnAddress}")
 async def api_checktxs(tnAddress):
-    checkit = verifier(config)
-
-    result = checkit.checkTXs(address=tnAddress)
-
-    return result
+    return dbc.checkTXs(address=tnAddress)
 
 @app.get("/api/checktxs")
 async def api_checktxs():
-    checkit = verifier(config)
-    result = checkit.checkTXs(address='')
-
-    return result
+    return dbc.checkTXs(address='')
 
 @app.get('/fees/{fromdate}/{todate}')
 async def api_getFees(fromdate, todate):
-    checkit = verifier(config)
-    result = checkit.getFees(fromdate, todate)
-
-    return result
+    return dbc.getFees(fromdate, todate)
 
 @app.get('/fees/{fromdate}')
 async def api_getFees(fromdate):
-    checkit = verifier(config)
-    result = checkit.getFees(fromdate, '')
-
-    return result
+    return dbc.getFees(fromdate, '')
 
 @app.get('/fees')
 async def api_getFees():
-    checkit = verifier(config)
-    result = checkit.getFees('','')
-
-    return result
+    return dbc.getFees('','')

@@ -1,6 +1,6 @@
-from web3 import Web3
 import sqlite3 as sqlite
-import requests
+from tnClass import tnCalls
+from otherClass import otherCalls
 
 def createdb():
     createHeightTable = '''
@@ -14,7 +14,10 @@ def createdb():
         CREATE TABLE IF NOT EXISTS tunnel (
             id integer PRIMARY KEY,
             sourceAddress text NOT NULL,
-            targetAddress text NOT NULL
+            targetAddress text NOT NULL,
+            timestamp timestamp
+            default current_timestamp,
+            status text
         );
     '''
     createTableExecuted = '''
@@ -69,17 +72,32 @@ def createVerify():
     con.commit()
     con.close()
 
+def updateExisting():
+    sql = '''
+        ALTER TABLE tunnel ADD COLUMN timestamp timestamp default current_timestamp;
+        ALTER TABLE tunnel ADD COLUMN status text;
+    '''
+
+    con = sqlite.connect('gateway.db')
+    cursor = con.cursor()
+    cursor.execute(sql)
+    con.commit()
+    con.close()
+
+    sql = 'UPDATE tunnel SET status = "created"'
+
+    con = sqlite.connect('gateway.db')
+    cursor = con.cursor()
+    cursor.execute(sql)
+    con.commit()
+    con.close()
+
 def initialisedb(config):
     #get current TN block:
-    tnlatestBlock = requests.get(config['tn']['node'] + '/blocks/height').json()['height'] - 1
+    tnlatestBlock = tnCalls(config).currentBlock()
 
     #get current ETH block:
-    if config['erc20']['node'].startswith('http'):
-        w3 = Web3(Web3.HTTPProvider(config['erc20']['node']))
-    else:
-        w3 = Web3()
-
-    ethlatestBlock = w3.eth.blockNumber
+    ethlatestBlock = otherCalls(config).currentBlock()
 
     con = sqlite.connect('gateway.db')
     cursor = con.cursor()
