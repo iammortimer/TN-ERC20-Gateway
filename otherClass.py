@@ -1,7 +1,7 @@
 import traceback
 from web3 import Web3
 from ethtoken.abi import EIP20_ABI
-from dbCalls import dbCalls
+from dbClass import dbCalls
 
 class otherCalls(object):
     def __init__(self, config):
@@ -29,9 +29,9 @@ class otherCalls(object):
         return self.w3.eth.getBlock(height)
 
     def currentBalance(self):
-        contract = self.w3.eth.contract(address=config['erc20']['contract']['address'], abi=EIP20_ABI)
-        balance = contract.functions.balanceOf(config['erc20']['gatewayAddress']).call()
-        balance /= pow(10, config['erc20']['contract']['decimals'])
+        contract = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
+        balance = contract.functions.balanceOf(self.config['erc20']['gatewayAddress']).call()
+        balance /= pow(10, self.config['erc20']['contract']['decimals'])
 
         return int(round(balance))
 

@@ -43,37 +43,38 @@ class TNChecker(object):
             targetAddress = self.tnc.checkTx(transaction)
 
             if targetAddress is not None:
-                if not(self.otc.validateAddress(targetAddress)):
-                    self.faultHandler(transaction, "txerror")
-                else:
-                    targetAddress = self.otc.normalizeAddress(targetAddress)
-                    amount = transaction['amount'] / pow(10, self.config['tn']['decimals'])
-                    amount -= self.config['erc20']['fee']
-                    amount *= pow(10, self.config['erc20']['contract']['decimals'])
-                    amount = int(round(amount))
-
-                    amountCheck = amount / pow(10, self.config['erc20']['contract']['decimals'])
-                    if amountCheck < self.config['main']['min'] or amountCheck > self.config['main']['max']:
-                        self.faultHandler(transaction, "senderror", e='outside amount ranges')
+                if targetAddress != "No attachment":
+                    if not(self.otc.validateAddress(targetAddress)):
+                        self.faultHandler(transaction, "txerror")
                     else:
-                        try:
-                            self.db.insTunnel('sending', transaction['sender'], targetAddress)
-                            txId = self.otc.sendTx(targetAddress, amount)
+                        targetAddress = self.otc.normalizeAddress(targetAddress)
+                        amount = transaction['amount'] / pow(10, self.config['tn']['decimals'])
+                        amount -= self.config['erc20']['fee']
+                        amount *= pow(10, self.config['erc20']['contract']['decimals'])
+                        amount = int(round(amount))
 
-                            if not(str(txId.hex()).startswith('0x')):
-                                self.faultHandler(transaction, "senderror", e=txId.hex())
-                            else:
-                                print("send tx: " + str(txId.hex()))
+                        amountCheck = amount / pow(10, self.config['erc20']['contract']['decimals'])
+                        if amountCheck < self.config['main']['min'] or amountCheck > self.config['main']['max']:
+                            self.faultHandler(transaction, "senderror", e='outside amount ranges')
+                        else:
+                            try:
+                                self.db.insTunnel('sending', transaction['sender'], targetAddress)
+                                txId = self.otc.sendTx(targetAddress, amount)
 
-                                self.db.insExecuted(transaction['sender'], targetAddress, txId.hex(), transaction['id'], round(amountCheck), self.config['erc20']['fee'])
-                                self.db.delTunnel(transaction['sender'], targetAddress)
-                                print('send tokens from tn to erc20!')
-                        except Exception as e:
-                            self.faultHandler(transaction, "txerror", e=e)
+                                if not(str(txId.hex()).startswith('0x')):
+                                    self.faultHandler(transaction, "senderror", e=txId.hex())
+                                else:
+                                    print("send tx: " + str(txId.hex()))
 
-                        self.otc.verifyTx(txId)
-            else:
-                self.faultHandler(transaction, 'noattachment')
+                                    self.db.insExecuted(transaction['sender'], targetAddress, txId.hex(), transaction['id'], round(amountCheck), self.config['erc20']['fee'])
+                                    self.db.delTunnel(transaction['sender'], targetAddress)
+                                    print('send tokens from tn to erc20!')
+                            except Exception as e:
+                                self.faultHandler(transaction, "txerror", e=e)
+
+                            self.otc.verifyTx(txId)
+                else:
+                    self.faultHandler(transaction, 'noattachment')
         
     def faultHandler(self, tx, error, e=""):
         #handle transfers to the gateway that have problems

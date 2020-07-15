@@ -3,7 +3,7 @@ import time
 import base58
 import PyCWaves
 import requests
-from dbCalls import dbCalls
+from dbClass import dbCalls
 
 class tnCalls(object):
     def __init__(self, config):
@@ -27,8 +27,8 @@ class tnCalls(object):
         return requests.get(self.node + '/blocks/at/' + str(height)).json()
 
     def currentBalance(self):
-        myBalance = self.tnAddress.balance(assetId=config['tn']['assetId'])
-        myBalance /= pow(10, config['tn']['decimals'])
+        myBalance = self.tnAddress.balance(assetId=self.config['tn']['assetId'])
+        myBalance /= pow(10, self.config['tn']['decimals'])
 
         return int(round(myBalance))
 
@@ -60,7 +60,7 @@ class tnCalls(object):
                 if not self.db.didWeSendTx(tx['id']): 
                     return targetAddress
             else:
-                return None
+                return "No attachment"
 
         return None
 

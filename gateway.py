@@ -30,12 +30,13 @@ security = HTTPBasic()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-with open('config_run.json') as json_file:
+with open('config.json') as json_file:
     config = json.load(json_file)
 
 dbc = dbCalls(config)
 tnc = tnCalls(config)
 otc = otherCalls(config)
+checkit = verifier(config)
 
 def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = secrets.compare_digest(credentials.username, config["main"]["admin-username"])
@@ -199,14 +200,12 @@ async def api_fullinfo(request: Request):
 
 @app.get("/api/deposit/{tnAddress}")
 async def api_depositCheck(tnAddress):
-    checkit = verifier(config)
     result = checkit.checkDeposit(address=tnAddress)
 
     return result
 
 @app.get("/api/wd/{tnAddress}")
 async def api_wdCheck(tnAddress):
-    checkit = verifier(config)
     result = checkit.checkWD(address=tnAddress)
 
     return result
@@ -230,3 +229,7 @@ async def api_getFees(fromdate):
 @app.get('/fees')
 async def api_getFees():
     return dbc.getFees('','')
+
+@app.get('/health')
+async def api_getHealth():
+    return checkit.checkHealth()
