@@ -1,3 +1,4 @@
+import os
 import traceback
 from web3 import Web3
 from ethtoken.abi import EIP20_ABI
@@ -8,6 +9,8 @@ class otherCalls(object):
         self.config = config
         self.db = dbCalls(config)
         self.w3 = self.getWeb3Instance()
+        self.privatekey = os.getenv(self.config['erc20']['seedenvname'], self.config['erc20']['privateKey'])
+
         self.lastScannedBlock = self.db.lastScannedBlock("ETH")
 
     def getWeb3Instance(self):
@@ -47,18 +50,27 @@ class otherCalls(object):
     def validateAddress(self, address):
         return self.w3.isAddress(address)
 
-    def verifyTx(self, txId):
-        try:
-            verified = self.w3.eth.waitForTransactionReceipt(txId.hex(), timeout=120)
+    def verifyTx(self, txId, sourceAddress = '', targetAddress = ''):
+        if type(txId) == str:
+            txid = txId
+        else: 
+            txid = txId.hex()
 
-            if verified['blockNumber'] > 0:
-                self.db.insVerified("ETH", txId.hex(), verified['blockNumber'])
+        tx = self.db.getExecuted(ethTxId=txid)
+
+        try:
+            verified = self.w3.eth.waitForTransactionReceipt(txid, timeout=120)
+
+            if verified['status'] == 1:
+                self.db.insVerified("ETH", txid, verified['blockNumber'])
                 print('tx to eth verified!')
-            else:
-                self.db.insVerified("ETH", txId.hex(), 0)
-                print('tx to eth not verified!')
+
+                self.db.delTunnel(sourceAddress, targetAddress)
+            elif verified['status'] == 0:
+                print('tx failed to send!')
+                self.resendTx(txId)
         except:
-            self.db.insVerified("ETH", txId.hex(), 0)
+            self.db.insVerified("ETH", txid, 0)
             print('tx to eth not verified!')
 
     def checkTx(self, tx):
@@ -75,6 +87,7 @@ class otherCalls(object):
                 try:
                     decodedInput = contract.decode_function_input(transaction['input'])
                 except Exception as e:
+                    self.lastScannedBlock = self.db.lastScannedBlock("ETH")
                     print('Something went wrong during ETH block iteration at block ' + str(self.lastScannedBlock))
                     print(traceback.TracebackException.from_exception(e))
                     return result
@@ -88,17 +101,26 @@ class otherCalls(object):
 
         return result
 
-    def sendTx(self, address, amount):
+    def sendTx(self, targetAddress, amount, gasprice = None, gas = None):
+        amount -= self.config['erc20']['fee']
+        amount *= pow(10, self.config['erc20']['contract']['decimals'])
+        amount = int(round(amount))
+
         token = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
         nonce = self.w3.eth.getTransactionCount(self.config['erc20']['gatewayAddress'])
-        if self.config['erc20']['gasprice'] > 0:
-            gasprice = self.w3.toWei(self.config['erc20']['gasprice'], 'gwei')
-        else:
-            gasprice = int(self.w3.eth.gasPrice * 1.1)
 
-        tx = token.functions.transfer(address, amount).buildTransaction({
+        if gasprice == None:
+            if self.config['erc20']['gasprice'] > 0:
+                gasprice = self.w3.toWei(self.config['erc20']['gasprice'], 'gwei')
+            else:
+                gasprice = int(self.w3.eth.gasPrice * 1.1)
+
+        if gas == None:
+            gas = self.config['erc20']['gas']
+
+        tx = token.functions.transfer(targetAddress, amount).buildTransaction({
             'chainId': 1,
-            'gas': self.config['erc20']['gas'],
+            'gas': gas,
             'gasPrice': gasprice,
             'nonce': nonce
         })
@@ -106,3 +128,33 @@ class otherCalls(object):
         txId = self.w3.eth.sendRawTransaction(signed_tx.rawTransaction)
 
         return txId
+
+    def resendTx(self, txId):
+        if type(txId) == str:
+            txid = txId
+        else: 
+            txid = txId.hex()
+
+        failedtx = self.db.getExecuted(ethTxId=txid)
+
+        if len(failedtx) > 0:
+            id = failedtx[0][0]
+            sourceAddress = failedtx[0][1]
+            targetAddress = failedtx[0][2]
+            tnTxId = failedtx[0][3]
+            amount = failedtx[0][6]
+
+            self.db.insError(sourceAddress, targetAddress, tnTxId, txid, amount, 'tx failed on network - manual intervention required')
+
+            #self.db.insTunnel('sending', sourceAddress, targetAddress)
+               
+            #gasprice = int(self.w3.eth.gasPrice * 1.5)
+            #gas = self.config['erc20']['gas'] * 2
+
+            #newtxId = self.sendTx(targetAddress, amount, gasprice, gas)
+
+            #self.db.updExecuted(id, sourceAddress, targetAddress, newtxId, tnTxId, amount, self.config['erc20']['fee'])
+            #self.db.updTunnel("verifying", sourceAddress, targetAddress)
+            self.db.updTunnel("error", sourceAddress, targetAddress)
+            #self.verifyTx(newtxId, sourceAddress, targetAddress)
+

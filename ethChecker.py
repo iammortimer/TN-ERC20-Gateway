@@ -83,7 +83,8 @@ class ETHChecker(object):
                                     self.db.insExecuted(txInfo['sender'], targetAddress, transaction.hex(), tx['id'], round(amountCheck), self.config['tn']['fee'])
                                     print('send tokens from eth to tn!')
 
-                                    self.db.delTunnel(txInfo['sender'], targetAddress)
+                                    #self.db.delTunnel(txInfo['sender'], targetAddress)
+                                    self.db.updTunnel("verifying", sourceAddress, targetAddress)
                             except Exception as e:
                                 self.faultHandler(txInfo, "txerror", e=e)
 

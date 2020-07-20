@@ -1,11 +1,14 @@
 import re
 import json
+import datetime
+import os
+from typing import List, Optional
+from pydantic import BaseModel
+
 from verification import verifier
 from dbClass import dbCalls
 from otherClass import otherCalls
 from tnClass import tnCalls
-import datetime
-import os
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -16,6 +19,84 @@ from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 from starlette.middleware.cors import CORSMiddleware
+
+class cHeights(BaseModel):
+    TN: int
+    Other: int
+
+class cAdresses(BaseModel):
+    sourceAddress: str
+    targetAddress: str
+
+class cExecResult(BaseModel):
+    successful: bool
+
+class cDustkey(BaseModel):
+    successful: bool
+    dustKey: int = None
+
+class cFullInfo(BaseModel):
+    chainName: str
+    assetID: str
+    tn_gateway_fee: float
+    tn_network_fee: float
+    tn_total_fee: float
+    other_gateway_fee: float
+    other_network_fee: float
+    other_total_fee: float
+    fee: float
+    company: str
+    email: str
+    telegram: str
+    recovery_amount: float
+    recovery_fee: float
+    otherHeight: int
+    tnHeight: int
+    tnAddress: str
+    tnColdAddress: str
+    otherAddress: str
+    otherNetwork: str
+    disclaimer: str
+    tn_balance: int
+    other_balance: int
+    minAmount: float
+    maxAmount: float
+    type: str
+    usageinfo: str
+
+class cDepositWD(BaseModel):
+    txVerified: bool = None
+    tx: str = None
+    block: int = None
+    error: str = None
+
+class cTx(BaseModel):
+    sourceAddress: str
+    targetAddress: str
+    tnTxId: str
+    OtherTxId: str
+    TNVerBlock: int = 0
+    OtherVerBlock: int = 0
+    amount: float
+    TypeTX: str
+    Status: str
+
+class cTxs(BaseModel):
+    transactions: List[cTx] = []
+    error: str = ""
+
+class cFees(BaseModel):
+    totalFees: float
+
+class cHealth(BaseModel):
+    status: str
+    connectionTN: bool
+    connectionOther: bool
+    blocksbehindTN: int
+    blockbehindOther: int
+    balanceTN: float
+    balanceOther: float
+    numberErrors: int
 
 app = FastAPI()
 app.add_middleware(
@@ -30,7 +111,7 @@ security = HTTPBasic()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-with open('config.json') as json_file:
+with open('config_run.json') as json_file:
     config = json.load(json_file)
 
 dbc = dbCalls(config)
@@ -74,16 +155,17 @@ async def index(request: Request):
                                                      "telegram": config['main']['contact-telegram'],
                                                      "recovery_amount":config['main']['recovery_amount'],
                                                      "recovery_fee":config['main']['recovery_fee'],
-                                                     "ethHeight": heights['ETH'],
+                                                     "ethHeight": heights['Other'],
                                                      "tnHeight": heights['TN'],
                                                      "tnAddress": config['tn']['gatewayAddress'],
                                                      "ethAddress": config['erc20']['gatewayAddress'],
                                                      "disclaimer": config['main']['disclaimer']})
 
-@app.get('/heights')
+@app.get('/heights', response_model=cHeights)
 async def getHeights():
     result = dbc.getHeights()
-    return { result[0][0]: result[0][1], result[1][0]: result[1][1] }
+    
+    return {'TN': result[1][1], 'Other': result[0][1]}
 
 @app.get('/errors')
 async def getErrors(request: Request, username: str = Depends(get_current_username)):
@@ -95,7 +177,7 @@ async def getErrors(request: Request, username: str = Depends(get_current_userna
         return templates.TemplateResponse("errors.html", {"request": request, "errors": result})
 
 @app.get('/executed')
-async def getErrors(request: Request, username: str = Depends(get_current_username)):
+async def getExecuted(request: Request, username: str = Depends(get_current_username)):
     if (config["main"]["admin-username"] == "admin" and config["main"]["admin-password"] == "admin"):
         return {"message": "change the default username and password please!"}
     
@@ -104,8 +186,8 @@ async def getErrors(request: Request, username: str = Depends(get_current_userna
         result2 = dbc.getVerifiedAll()
         return templates.TemplateResponse("tx.html", {"request": request, "txs": result, "vtxs": result2})
 
-@app.get('/ethAddress/{address}')
-async def checkTunnel(address):
+@app.get('/ethAddress/{address}', response_model=cAdresses)
+async def checkTunnel(address: str):
     address = re.sub('[\W_]+', '', address)
 
     result = dbc.getTargetAddress(address)
@@ -114,10 +196,11 @@ async def checkTunnel(address):
     else:
         targetAddress = result
 
-    return { 'sourceAddress': address, 'targetAddress': targetAddress }
+    return cAdresses(sourceAddress=address, targetAddress=targetAddress)
 
-@app.get('/tunnel/{sourceAddress}/{targetAddress}')
-async def createTunnel(sourceAddress, targetAddress):
+#TODO: rewrite to post
+@app.get('/tunnel/{sourceAddress}/{targetAddress}', response_model=cExecResult)
+async def createTunnel(sourceAddress: str, targetAddress: str):
     sourceAddress = re.sub('[\W_]+', '', sourceAddress)
     targetAddress = re.sub('[\W_]+', '', targetAddress)
 
@@ -140,8 +223,9 @@ async def createTunnel(sourceAddress, targetAddress):
         else: 
             return { 'successful': True }
 
-@app.get('/dustkey/{targetAddress}')
-async def createTunnel(targetAddress):
+#TODO: rewrite to post
+@app.get('/dustkey/{targetAddress}', response_model=cDustkey)
+async def createTunnelDK(targetAddress: str):
     if not tnc.validateAddress(targetAddress):
         return {'successful': False}
 
@@ -165,8 +249,8 @@ async def createTunnel(targetAddress):
         else: 
             return { 'successful': True, 'dustkey': result }
 
-@app.get("/api/fullinfo")
-async def api_fullinfo(request: Request):
+@app.get("/api/fullinfo", response_model=cFullInfo)
+async def api_fullinfo():
     heights = await getHeights()
     tnBalance = get_tnBalance()
     otherBalance = get_otherBalance()
@@ -184,7 +268,7 @@ async def api_fullinfo(request: Request):
             "telegram": config['main']['contact-telegram'],
             "recovery_amount":config['main']['recovery_amount'],
             "recovery_fee":config['main']['recovery_fee'],
-            "otherHeight": heights['ETH'],
+            "otherHeight": heights['Other'],
             "tnHeight": heights['TN'],
             "tnAddress": config['tn']['gatewayAddress'],
             "tnColdAddress": config['tn']['coldwallet'],
@@ -198,38 +282,52 @@ async def api_fullinfo(request: Request):
             "type": "tunnel",
             "usageinfo": ""}
 
-@app.get("/api/deposit/{tnAddress}")
-async def api_depositCheck(tnAddress):
+@app.get("/api/deposit/{tnAddress}", response_model=cDepositWD)
+async def api_depositCheck(tnAddress:str):
     result = checkit.checkDeposit(address=tnAddress)
 
     return result
 
-@app.get("/api/wd/{tnAddress}")
-async def api_wdCheck(tnAddress):
+@app.get("/api/wd/{tnAddress}", response_model=cDepositWD)
+async def api_wdCheck(tnAddress: str):
     result = checkit.checkWD(address=tnAddress)
 
     return result
 
-@app.get("/api/checktxs/{tnAddress}")
-async def api_checktxs(tnAddress):
-    return dbc.checkTXs(address=tnAddress)
+@app.get("/api/checktxs/{tnAddress}", response_model=cTxs)
+async def api_checktxs(tnAddress: str):
+    result = dbc.checkTXs(address=tnAddress)
 
-@app.get("/api/checktxs")
+    if 'error' in result:
+        temp = cTxs(error=result['error'])
+    else:
+        temp = cTxs(transactions=result)
+        
+    return temp
+
+@app.get("/api/checktxs", response_model=cTxs)
 async def api_checktxs():
-    return dbc.checkTXs(address='')
+    result = dbc.checkTXs(address='')
 
-@app.get('/fees/{fromdate}/{todate}')
-async def api_getFees(fromdate, todate):
+    if 'error' in result:
+        temp = cTxs(error=result['error'])
+    else:
+        temp = cTxs(transactions=result)
+
+    return temp
+
+@app.get('/api/fees/{fromdate}/{todate}', response_model=cFees)
+async def api_getFees(fromdate: str, todate: str):
     return dbc.getFees(fromdate, todate)
 
-@app.get('/fees/{fromdate}')
-async def api_getFees(fromdate):
+@app.get('/api/fees/{fromdate}', response_model=cFees)
+async def api_getFees(fromdate: str):
     return dbc.getFees(fromdate, '')
 
-@app.get('/fees')
+@app.get('/api/fees', response_model=cFees)
 async def api_getFees():
     return dbc.getFees('','')
 
-@app.get('/health')
+@app.get('/api/health', response_model=cHealth)
 async def api_getHealth():
     return checkit.checkHealth()

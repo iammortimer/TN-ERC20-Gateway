@@ -49,12 +49,8 @@ class TNChecker(object):
                     else:
                         targetAddress = self.otc.normalizeAddress(targetAddress)
                         amount = transaction['amount'] / pow(10, self.config['tn']['decimals'])
-                        amount -= self.config['erc20']['fee']
-                        amount *= pow(10, self.config['erc20']['contract']['decimals'])
-                        amount = int(round(amount))
-
-                        amountCheck = amount / pow(10, self.config['erc20']['contract']['decimals'])
-                        if amountCheck < self.config['main']['min'] or amountCheck > self.config['main']['max']:
+                        
+                        if amount < self.config['main']['min'] or amount > self.config['main']['max']:
                             self.faultHandler(transaction, "senderror", e='outside amount ranges')
                         else:
                             try:
@@ -66,13 +62,15 @@ class TNChecker(object):
                                 else:
                                     print("send tx: " + str(txId.hex()))
 
-                                    self.db.insExecuted(transaction['sender'], targetAddress, txId.hex(), transaction['id'], round(amountCheck), self.config['erc20']['fee'])
-                                    self.db.delTunnel(transaction['sender'], targetAddress)
+                                    self.db.insExecuted(transaction['sender'], targetAddress, txId.hex(), transaction['id'], round(amount), self.config['erc20']['fee'])
                                     print('send tokens from tn to erc20!')
+
+                                    #self.db.delTunnel(transaction['sender'], targetAddress)
+                                    self.db.updTunnel("verifying", transaction['sender'], targetAddress)
                             except Exception as e:
                                 self.faultHandler(transaction, "txerror", e=e)
 
-                            self.otc.verifyTx(txId)
+                            self.otc.verifyTx(txId, transaction['sender'], targetAddress)
                 else:
                     self.faultHandler(transaction, 'noattachment')
         

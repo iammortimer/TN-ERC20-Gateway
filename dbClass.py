@@ -1,3 +1,4 @@
+import PyCWaves
 import sqlite3 as sqlite
 from datetime import timedelta
 import datetime
@@ -6,6 +7,9 @@ class dbCalls(object):
     def __init__(self, config):
         self.config = config
         self.dbCon = sqlite.connect('gateway.db', check_same_thread=False)
+        self.pwTN = PyCWaves.PyCWaves()
+        self.pwTN.THROW_EXCEPTION_ON_ERROR = True
+        self.pwTN.setNode(node=self.config['tn']['node'], chain=self.config['tn']['network'], chain_id='L')
 
     def lastScannedBlock(self, chain):
         sql = 'SELECT height FROM heights WHERE chain = ?'
@@ -50,7 +54,7 @@ class dbCalls(object):
             return False
 
     def getTargetAddress(self, sourceAddress):
-        sql = 'SELECT targetAddress FROM tunnel WHERE status = "created" AND sourceAddress = ?'
+        sql = 'SELECT targetAddress FROM tunnel WHERE status <> "error" AND sourceAddress = ?'
         values = (sourceAddress,)
 
         cursor = self.dbCon.cursor()
@@ -62,7 +66,7 @@ class dbCalls(object):
             return {}
 
     def getSourceAddress(self, targetAddress):
-        sql = 'SELECT sourceAddress FROM tunnel WHERE status = "created" AND targetAddress = ?'
+        sql = 'SELECT sourceAddress FROM tunnel WHERE status <> "error" AND targetAddress = ?'
         values = (targetAddress,)
 
         cursor = self.dbCon.cursor()
@@ -74,15 +78,15 @@ class dbCalls(object):
             return {}
 
     def insTunnel(self, status, sourceAddress, targetAddress):
-        sql = 'INSERT INTO tunnel ("sourceAddress", "targetAddress", "status") VALUES (?, ?, ?)'
-        values = (status, sourceAddress, targetAddress)
+        sql = 'INSERT INTO tunnel ("sourceAddress", "targetAddress", "status", "timestamp") VALUES (?, ?, ?, CURRENT_TIMESTAMP)'
+        values = (sourceAddress, targetAddress, status)
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
 
     def updTunnel(self, status, sourceAddress, targetAddress):
-        sql = 'UPDATE tunnel SET "status" = ? WHERE status = "created" AND sourceAddress = ? and targetAddress = ?'
+        sql = 'UPDATE tunnel SET "status" = ?, "timestamp" = CURRENT_TIMESTAMP WHERE status = "created" AND sourceAddress = ? and targetAddress = ?'
         values = (status, sourceAddress, targetAddress)
 
         cursor = self.dbCon.cursor()
@@ -100,6 +104,14 @@ class dbCalls(object):
     def insExecuted(self, sourceAddress, targetAddress, ethTxID, tnTxID, amount, amountFee):
         sql = 'INSERT INTO executed ("sourceAddress", "targetAddress", "ethTxId", "tnTxId", "amount", "amountFee") VALUES (?, ?, ?, ?, ?, ?)'
         values = (sourceAddress, targetAddress, ethTxID, tnTxID, amount, amountFee)
+
+        cursor = self.dbCon.cursor()
+        qryResult = cursor.execute(sql, values)
+        self.dbCon.commit()
+
+    def updExecuted(self, id, sourceAddress, targetAddress, ethTxID, tnTxID, amount, amountFee):
+        sql = 'UPDATE executed SET "sourceAddress" = ?, "targetAddress" = ?, "ethTxId" = ?, "tnTxId" = ?, "amount" = ?, "amountFee" = ?) WHERE id = ?'
+        values = (sourceAddress, targetAddress, ethTxID, tnTxID, amount, amountFee, id)
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values)
@@ -128,7 +140,7 @@ class dbCalls(object):
         else:
             return {}
 
-    def getExecuted(self, sourceAddress = '', targetAddress = ''):
+    def getExecuted(self, sourceAddress = '', targetAddress = '', ethTxId = '', tnTxId = ''):
         if sourceAddress != '':
             sql = 'SELECT ethTxId FROM executed WHERE sourceAddress = ? ORDER BY id DESC LIMIT 1'
             values = (sourceAddress,)
@@ -149,6 +161,28 @@ class dbCalls(object):
 
             if len(qryResult) > 0:
                 return qryResult[0][0]
+            else:
+                return {}
+        elif ethTxId != '':
+            sql = 'SELECT * FROM executed WHERE ethTxId = ? ORDER BY id DESC LIMIT 1'
+            values = (ethTxId,)
+
+            cursor = self.dbCon.cursor()
+            qryResult = cursor.execute(sql, values).fetchall()
+
+            if len(qryResult) > 0:
+                return qryResult
+            else:
+                return {}
+        elif tnTxId != '':
+            sql = 'SELECT * FROM executed WHERE tnTxId = ? ORDER BY id DESC LIMIT 1'
+            values = (tnTxId,)
+
+            cursor = self.dbCon.cursor()
+            qryResult = cursor.execute(sql, values).fetchall()
+
+            if len(qryResult) > 0:
+                return qryResult
             else:
                 return {}
         else:
@@ -189,12 +223,12 @@ class dbCalls(object):
         values = (tx,)
 
         cursor = self.dbCon.cursor()
-        qryResult = cursor.execute(sql).fetchall()
+        qryResult = cursor.execute(sql, values).fetchall()
 
         if len(qryResult) > 0:
             return qryResult[0][0]
         else:
-            return {}
+            return None
 
     def insVerified(self, chain, tx, block):
         sql = 'INSERT INTO verified ("chain", "tx", "block") VALUES (?, ?, ?)'
@@ -208,7 +242,7 @@ class dbCalls(object):
     def checkTXs(self, address):
         if len(address) == 0:
             cursor = self.dbCon.cursor()
-            sql = "SELECT e.sourceAddress, e.targetAddress, e.tnTxId, e.ethTxId as 'OtherTxId', v.block as 'TNVerBlock', v2.block as 'OtherVerBlock', e.amount, CASE WHEN e.targetAddress LIKE '3J%' THEN 'Deposit' ELSE 'Withdraw' END 'TypeTX', " \
+            sql = "SELECT e.sourceAddress, e.targetAddress, e.tnTxId, e.ethTxId as 'OtherTxId', ifnull(v.block, 0) as 'TNVerBlock', ifnull(v2.block, 0) as 'OtherVerBlock', e.amount, CASE WHEN e.targetAddress LIKE '3J%' THEN 'Deposit' ELSE 'Withdraw' END 'TypeTX', " \
             "CASE WHEN e.targetAddress LIKE '3J%' AND v.block IS NOT NULL THEN 'verified' WHEN e.targetAddress NOT LIKE '3J%' AND v2.block IS NOT NULL AND v2.block IS NOT 0 THEN 'verified' ELSE 'unverified' END 'Status' " \
             "FROM executed e LEFT JOIN verified v ON e.tnTxId = v.tx LEFT JOIN verified v2 ON e.ethTxId = v2.tx "
             cursor.execute(sql)
@@ -225,7 +259,7 @@ class dbCalls(object):
                 return {'error': 'invalid address'}
             else:
                 cursor = self.dbCon.cursor()
-                sql = "SELECT e.sourceAddress, e.targetAddress, e.tnTxId, e.ethTxId as 'OtherTxId', v.block as 'TNVerBlock', v2.block as 'OtherVerBlock', e.amount, CASE WHEN e.targetAddress LIKE '3J%' THEN 'Deposit' ELSE 'Withdraw' END 'TypeTX', " \
+                sql = "SELECT e.sourceAddress, e.targetAddress, e.tnTxId, e.ethTxId as 'OtherTxId', ifnull(v.block, 0) as 'TNVerBlock', ifnull(v2.block, 0) as 'OtherVerBlock', e.amount, CASE WHEN e.targetAddress LIKE '3J%' THEN 'Deposit' ELSE 'Withdraw' END 'TypeTX', " \
                 "CASE WHEN e.targetAddress LIKE '3J%' AND v.block IS NOT NULL THEN 'verified' WHEN e.targetAddress NOT LIKE '3J%' AND v2.block IS NOT NULL AND v2.block IS NOT 0 THEN 'verified' ELSE 'unverified' END 'Status' " \
                 "FROM executed e LEFT JOIN verified v ON e.tnTxId = v.tx LEFT JOIN verified v2 ON e.ethTxId = v2.tx WHERE (e.sourceAddress = ? or e.targetAddress = ?)"
                 cursor.execute(sql, (address, address))

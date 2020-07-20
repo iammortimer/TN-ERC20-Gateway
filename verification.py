@@ -20,7 +20,7 @@ class verifier(object):
             else:
                 result = self.db.getVerified(tx)
 
-                if len(result) == 0:
+                if result is None:
                     return {'txVerified': False, 'tx': tx, 'block': 0} 
                 else:
                     if result > 0:
@@ -39,7 +39,7 @@ class verifier(object):
             else:
                 result = result = self.db.getVerified(tx)
 
-                if len(result) == 0:
+                if result is None:
                     return {'txVerified': False, 'tx': tx, 'block': 0} 
                 else:
                     if result > 0:
@@ -61,20 +61,26 @@ class verifier(object):
         if connTN: total += 100
         if connOther: total += 100
 
-        if heightOther == "Good": total += 100
-        elif heightOther == "Fair": total += 50
-        if heightTN == "Good": total += 100
-        elif heightTN == "Fair": total += 50
+        if heightOther < 100: total += 100
+        elif heightOther > 100: total += 50
+        if heightTN < 100: total += 100
+        elif heightTN > 100: total += 50
 
-        if balanceOther == "Good": total += 100
-        if balanceTN == "Good": total += 100
+        if (self.config["main"]["max"] * 10) > balanceOther > 0: total += 100
+        if (self.config["main"]["max"] * 10) > balanceTN > 0: total += 100
 
-        if numErrors == "Good": total += 100
-        elif numErrors == "Fair": total += 50
+        if numErrors == 0: total += 100
+        elif numErrors < 10: total += 50
 
+        if not connTN or not connOther:
+            status = "red"
+        elif total == 700:
+            status = "green"
+        else:
+            status = "yellow"
+        
         result = {
-            "score": total,
-            "maxscore": 700,
+            "status": status,
             "connectionTN": connTN,
             "connectionOther": connOther,
             "blocksbehindTN": heightTN,
@@ -121,15 +127,9 @@ class verifier(object):
 
         if current > 0:
             diff = current - lastscanned
-
-            if diff < 100:
-                return "Good"
-            elif diff < 200:
-                return "Fair"
-            else:
-                return "Bad"
+            return diff
         else:
-            return "Error"
+            return -1
 
     def chBalance(self, chain):
         if chain == 'TN':
@@ -137,30 +137,32 @@ class verifier(object):
                 current = self.tnc.currentBalance()
             except:
                 current = 0
-
         else:
             try:
                 current = self.otc.currentBalance()
             except:
                 current = 0
 
-        if current > 0:
-            if current < self.config["main"]["max"]:
-                return "Too low"
-            elif current > (self.config["main"]["max"] * 10):
-                return "Too high"
-            else:
-                return "Good"
-        else:
-            return "Error"
+        #if current > 0:
+            #if current < self.config["main"]["max"]:
+            #    return "Too low"
+            #elif current > (self.config["main"]["max"] * 10):
+            #    return "Too high"
+            #else:
+            #    return "Good"
+        #else:
+        #    return "Error"
+        return current
 
     def chErrors(self):
         errors = self.db.getErrors()
 
-        if len(errors) > 50:
-            return "Bad"
-        elif 10 < len(errors) < 50:
-            return "Fair"
-        else:
-            return "Good"
+        #if len(errors) > 50:
+        #    return "Bad"
+        #elif 10 < len(errors) < 50:
+        #    return "Fair"
+        #else:
+        #    return "Good"
+        
+        return len(errors)
 

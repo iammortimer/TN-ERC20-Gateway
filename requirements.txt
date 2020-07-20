@@ -9,3 +9,4 @@ jinja2
 aiofiles
 web3
 ethtoken
+pydantic
