@@ -65,10 +65,10 @@ class cFullInfo(BaseModel):
     usageinfo: str
 
 class cDepositWD(BaseModel):
-    txVerified: bool = None
-    tx: str = None
-    block: int = None
-    error: str = None
+    status: str
+    tx: str
+    block: str
+    error: str
 
 class cTx(BaseModel):
     sourceAddress: str
@@ -123,6 +123,7 @@ def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = secrets.compare_digest(credentials.username, config["main"]["admin-username"])
     correct_password = secrets.compare_digest(credentials.password, config["main"]["admin-password"])
     if not (correct_username and correct_password):
+        print("ERROR: invalid logon details")
         raise HTTPException(
             status_code=HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -173,6 +174,7 @@ async def getErrors(request: Request, username: str = Depends(get_current_userna
         return {"message": "change the default username and password please!"}
     
     if username == config["main"]["admin-username"]:
+        print("INFO: displaying errors page")
         result = dbc.getErrors()
         return templates.TemplateResponse("errors.html", {"request": request, "errors": result})
 
@@ -182,6 +184,7 @@ async def getExecuted(request: Request, username: str = Depends(get_current_user
         return {"message": "change the default username and password please!"}
     
     if username == config["main"]["admin-username"]:
+        print("INFO: displaying executed page")
         result = dbc.getExecutedAll()
         result2 = dbc.getVerifiedAll()
         return templates.TemplateResponse("tx.html", {"request": request, "txs": result, "vtxs": result2})
@@ -215,7 +218,7 @@ async def createTunnel(sourceAddress: str, targetAddress: str):
     result = dbc.getTargetAddress(sourceAddress)
     if len(result) == 0:
         dbc.insTunnel("created", sourceAddress, targetAddress)
-
+        print("INFO: tunnel created")
         return { 'successful': True }
     else:
         if result != targetAddress:
@@ -238,6 +241,7 @@ async def createTunnelDK(targetAddress: str):
 
         if len(result) == 0:
             dbc.insTunnel("created", sourceAddress, targetAddress)
+            print("INFO: tunnel created - dustkey")
 
             return { 'successful': True, 'dustkey': sourceAddress}
         else:
@@ -284,13 +288,13 @@ async def api_fullinfo():
 
 @app.get("/api/deposit/{tnAddress}", response_model=cDepositWD)
 async def api_depositCheck(tnAddress:str):
-    result = checkit.checkDeposit(address=tnAddress)
+    result = checkit.checkTX(targetAddress=tnAddress)
 
     return result
 
 @app.get("/api/wd/{tnAddress}", response_model=cDepositWD)
 async def api_wdCheck(tnAddress: str):
-    result = checkit.checkWD(address=tnAddress)
+    result = checkit.checkTX(sourceAddress=tnAddress)
 
     return result
 

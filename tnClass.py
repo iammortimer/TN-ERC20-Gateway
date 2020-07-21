@@ -42,13 +42,13 @@ class tnCalls(object):
 
             if verified['height'] > 0:
                 self.db.insVerified("TN", tx['id'], verified['height'])
-                print('tx to tn verified!')
+                print('INFO: tx to tn verified!')
             else:
                 self.db.insVerified("TN", tx['id'], 0)
-                print('tx to tn not verified!')
+                print('WARN: tx to tn not verified!')
         except:
             self.db.insVerified("TN", tx['id'], 0)
-            print('tx to tn not verified!')
+            print('WARN: tx to tn not verified!')
 
     def checkTx(self, tx):
         #check the transaction

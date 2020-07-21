@@ -18,7 +18,7 @@ class ETHChecker(object):
 
     def run(self):
         #main routine to run continuesly
-        print('started checking ETH blocks at: ' + str(self.lastScannedBlock))
+        print('INFO: started checking ETH blocks at: ' + str(self.lastScannedBlock))
 
         while True:
             try:
@@ -30,8 +30,7 @@ class ETHChecker(object):
                     self.db.updHeights(self.lastScannedBlock, "ETH")
             except Exception as e:
                 self.lastScannedBlock -= 1
-                print('Something went wrong during ETH block iteration: ')
-                print(traceback.TracebackException.from_exception(e))
+                print('ERROR: Something went wrong during ETH block iteration: ' + traceback.TracebackException.from_exception(e))
 
             time.sleep(self.config['erc20']['timeInBetweenChecks'])
 
@@ -78,10 +77,10 @@ class ETHChecker(object):
                                 if 'error' in tx:
                                     self.faultHandler(txInfo, "senderror", e=tx['message'])
                                 else:
-                                    print("send tx: " + str(tx))
+                                    print("INFO: send tx: " + str(tx))
 
                                     self.db.insExecuted(txInfo['sender'], targetAddress, transaction.hex(), tx['id'], round(amountCheck), self.config['tn']['fee'])
-                                    print('send tokens from eth to tn!')
+                                    print('INFO: send tokens from eth to tn!')
 
                                     #self.db.delTunnel(txInfo['sender'], targetAddress)
                                     self.db.updTunnel("verifying", sourceAddress, targetAddress)
@@ -97,14 +96,14 @@ class ETHChecker(object):
 
         if error == "notunnel":
             self.db.insError(tx['sender'], '', '', tx['id'], amount, 'no tunnel found for sender')
-            print(timestampStr + " - Error: no tunnel found for transaction from " + tx['sender'] + " - check errors table.")
+            print("ERROR: " + timestampStr + " - Error: no tunnel found for transaction from " + tx['sender'] + " - check errors table.")
 
         if error == "txerror":
             targetAddress = tx['recipient']
             self.db.insError(tx['sender'], targetAddress, '', tx['id'], amount, 'tx error, possible incorrect address', str(e))
-            print(timestampStr + " - Error: on outgoing transaction for transaction from " + tx['sender'] + " - check errors table.")
+            print("ERROR: " + timestampStr + " - Error: on outgoing transaction for transaction from " + tx['sender'] + " - check errors table.")
 
         if error == "senderror":
             targetAddress = tx['recipient']
             self.db.insError(tx['sender'], targetAddress, '', tx['id'], amount, 'tx error, check exception error', str(e))
-            print(timestampStr + " - Error: on outgoing transaction for transaction from " + tx['sender'] + " - check errors table.")
+            print("ERROR: " + timestampStr + " - Error: on outgoing transaction for transaction from " + tx['sender'] + " - check errors table.")

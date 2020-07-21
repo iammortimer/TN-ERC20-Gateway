@@ -63,15 +63,15 @@ class otherCalls(object):
 
             if verified['status'] == 1:
                 self.db.insVerified("ETH", txid, verified['blockNumber'])
-                print('tx to eth verified!')
+                print('INFO: tx to eth verified!')
 
                 self.db.delTunnel(sourceAddress, targetAddress)
             elif verified['status'] == 0:
-                print('tx failed to send!')
+                print('ERROR: tx failed to send!')
                 self.resendTx(txId)
         except:
             self.db.insVerified("ETH", txid, 0)
-            print('tx to eth not verified!')
+            print('WARN: tx to eth not verified!')
 
     def checkTx(self, tx):
         #check the transaction
@@ -145,6 +145,7 @@ class otherCalls(object):
             amount = failedtx[0][6]
 
             self.db.insError(sourceAddress, targetAddress, tnTxId, txid, amount, 'tx failed on network - manual intervention required')
+            print("ERROR: tx failed on network - manual intervention required: " + txid)
 
             #self.db.insTunnel('sending', sourceAddress, targetAddress)
                

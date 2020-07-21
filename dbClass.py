@@ -11,6 +11,7 @@ class dbCalls(object):
         self.pwTN.THROW_EXCEPTION_ON_ERROR = True
         self.pwTN.setNode(node=self.config['tn']['node'], chain=self.config['tn']['network'], chain_id='L')
 
+#heights table related
     def lastScannedBlock(self, chain):
         sql = 'SELECT height FROM heights WHERE chain = ?'
         values = (chain,)
@@ -42,6 +43,7 @@ class dbCalls(object):
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
 
+#tunnel table related
     def doWeHaveTunnels(self):
         sql = 'SELECT * FROM tunnel WHERE status = "created"'
 
@@ -77,6 +79,24 @@ class dbCalls(object):
         else:
             return {}
 
+    def getTunnelStatus(self, targetAddress = '', sourceAddress = ''):
+        if targetAddress != '':
+            sql = 'SELECT status FROM tunnel WHERE targetAddress = ? ORDER BY id DESC LIMIT 1'
+            values = (targetAddress,)
+        elif  sourceAddress != '':
+            sql = 'SELECT status FROM tunnel WHERE sourceAddress = ? ORDER BY id DESC LIMIT 1'
+            values = (sourceAddress,)
+        else:
+            return {}
+
+        cursor = self.dbCon.cursor()
+        qryResult = cursor.execute(sql, values).fetchall()
+
+        if len(qryResult) > 0:
+            return qryResult
+        else:
+            return {}
+
     def insTunnel(self, status, sourceAddress, targetAddress):
         sql = 'INSERT INTO tunnel ("sourceAddress", "targetAddress", "status", "timestamp") VALUES (?, ?, ?, CURRENT_TIMESTAMP)'
         values = (sourceAddress, targetAddress, status)
@@ -101,6 +121,7 @@ class dbCalls(object):
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
 
+#executed table related
     def insExecuted(self, sourceAddress, targetAddress, ethTxID, tnTxID, amount, amountFee):
         sql = 'INSERT INTO executed ("sourceAddress", "targetAddress", "ethTxId", "tnTxId", "amount", "amountFee") VALUES (?, ?, ?, ?, ?, ?)'
         values = (sourceAddress, targetAddress, ethTxID, tnTxID, amount, amountFee)
@@ -144,50 +165,27 @@ class dbCalls(object):
         if sourceAddress != '':
             sql = 'SELECT ethTxId FROM executed WHERE sourceAddress = ? ORDER BY id DESC LIMIT 1'
             values = (sourceAddress,)
-
-            cursor = self.dbCon.cursor()
-            qryResult = cursor.execute(sql, values).fetchall()
-
-            if len(qryResult) > 0:
-                return qryResult[0][0]
-            else:
-                return {}
         elif targetAddress != '':
             sql = 'SELECT tnTxId FROM executed WHERE targetAddress = ? ORDER BY id DESC LIMIT 1'
             values = (targetAddress,)
-
-            cursor = self.dbCon.cursor()
-            qryResult = cursor.execute(sql, values).fetchall()
-
-            if len(qryResult) > 0:
-                return qryResult[0][0]
-            else:
-                return {}
         elif ethTxId != '':
             sql = 'SELECT * FROM executed WHERE ethTxId = ? ORDER BY id DESC LIMIT 1'
             values = (ethTxId,)
-
-            cursor = self.dbCon.cursor()
-            qryResult = cursor.execute(sql, values).fetchall()
-
-            if len(qryResult) > 0:
-                return qryResult
-            else:
-                return {}
         elif tnTxId != '':
             sql = 'SELECT * FROM executed WHERE tnTxId = ? ORDER BY id DESC LIMIT 1'
             values = (tnTxId,)
-
-            cursor = self.dbCon.cursor()
-            qryResult = cursor.execute(sql, values).fetchall()
-
-            if len(qryResult) > 0:
-                return qryResult
-            else:
-                return {}
         else:
             return {}
 
+        cursor = self.dbCon.cursor()
+        qryResult = cursor.execute(sql, values).fetchall()
+
+        if len(qryResult) > 0:
+            return qryResult
+        else:
+            return {}
+
+#error table related
     def insError(self, sourceAddress, targetAddress, tnTxId, ethTxId, amount, error, exception = ''):
         sql = 'INSERT INTO errors ("sourceAddress", "targetAddress", "tnTxId", "ethTxId", "amount", "error", "exception") VALUES (?, ?, ?, ?, ?, ?, ?)'
         values = (sourceAddress, targetAddress, tnTxId, ethTxId, amount, error, exception)
@@ -207,6 +205,25 @@ class dbCalls(object):
         else:
             return {}
 
+    def getError(self, sourceAddress='', targetAddress=''):
+        if sourceAddress != '':
+            sql = 'SELECT error, tntxid, ethtxid FROM errors WHERE sourceAddress = ? ORDER BY id DESC LIMIT 1'
+            values = (sourceAddress,)
+        elif targetAddress != '':
+            sql = 'SELECT error, tntxid, ethtxid FROM errors WHERE targetAddress = ? ORDER BY id DESC LIMIT 1'
+            values = (targetAddress,)
+        else:
+            return {}
+
+        cursor = self.dbCon.cursor()
+        qryResult = cursor.execute(sql, values).fetchall()
+
+        if len(qryResult) > 0:
+            return qryResult
+        else:
+            return {}
+
+#verified table related
     def getVerifiedAll(self):
         sql = 'SELECT * FROM verified'
 
@@ -238,7 +255,7 @@ class dbCalls(object):
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
 
-
+#other
     def checkTXs(self, address):
         if len(address) == 0:
             cursor = self.dbCon.cursor()
@@ -246,14 +263,6 @@ class dbCalls(object):
             "CASE WHEN e.targetAddress LIKE '3J%' AND v.block IS NOT NULL THEN 'verified' WHEN e.targetAddress NOT LIKE '3J%' AND v2.block IS NOT NULL AND v2.block IS NOT 0 THEN 'verified' ELSE 'unverified' END 'Status' " \
             "FROM executed e LEFT JOIN verified v ON e.tnTxId = v.tx LEFT JOIN verified v2 ON e.ethTxId = v2.tx "
             cursor.execute(sql)
-
-            tx = [dict((cursor.description[i][0], value) for i, value in enumerate(row)) for row in cursor.fetchall()]
-            cursor.connection.close()
-
-            if len(tx) == 0:
-                return {'error': 'no tx found'}
-            else:
-                return tx
         else:
             if not self.pwTN.validateAddress(address):
                 return {'error': 'invalid address'}
@@ -264,13 +273,13 @@ class dbCalls(object):
                 "FROM executed e LEFT JOIN verified v ON e.tnTxId = v.tx LEFT JOIN verified v2 ON e.ethTxId = v2.tx WHERE (e.sourceAddress = ? or e.targetAddress = ?)"
                 cursor.execute(sql, (address, address))
 
-                tx = [dict((cursor.description[i][0], value) for i, value in enumerate(row)) for row in cursor.fetchall()]
-                cursor.connection.close()
+        tx = [dict((cursor.description[i][0], value) for i, value in enumerate(row)) for row in cursor.fetchall()]
+        cursor.connection.close()
 
-                if len(tx) == 0:
-                    return {'error': 'no tx found'}
-                else:
-                    return tx
+        if len(tx) == 0:
+            return {'error': 'no tx found'}
+        else:
+            return tx
 
     def getFees(self, fromdate, todate):
         #check date notation
