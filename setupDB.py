@@ -74,20 +74,17 @@ def createVerify():
 
 def updateExisting():
     try:
-        sql = '''
-            ALTER TABLE tunnel ADD COLUMN timestamp timestamp;
-        '''
+        sql = 'ALTER TABLE tunnel ADD COLUMN timestamp timestamp;'
 
         con = sqlite.connect('gateway.db')
         cursor = con.cursor()
         cursor.execute(sql)
         con.commit()
     except:
+        con.close()
         return
 
-    sql = '''
-        ALTER TABLE tunnel ADD COLUMN status text;
-    '''
+    sql = 'ALTER TABLE tunnel ADD COLUMN status text;'
 
     cursor = con.cursor()
     cursor.execute(sql)

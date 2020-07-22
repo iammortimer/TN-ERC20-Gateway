@@ -30,6 +30,8 @@
         "network_fee": <the tx part of the fee calculated in the proxy token, e.g., 0.1>,
         "timeInBetweenChecks": <seconds in between a check for a new block>,
         "confirmations": <number of confirmations necessary in order to accept a transaction>,
+        "etherscan-on": <true or false, depending on if you want to use etherscan instead of a normal eth node for most calls>,
+        "etherscan-apikey": <etherscan apikey, required if you want to use etherscan alternative>,
         "network": "Ethereum"
     },
     "tn": {

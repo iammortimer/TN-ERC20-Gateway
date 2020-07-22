@@ -4,15 +4,20 @@ import sharedfunc
 from dbClass import dbCalls
 from tnClass import tnCalls
 from otherClass import otherCalls
+from etherscanClass import etherscanCalls
 from verification import verifier
 
 class ETHChecker(object):
     def __init__(self, config):
         self.config = config
         self.db = dbCalls(config)
-        self.otc = otherCalls(config)
         self.tnc = tnCalls(config)
         self.verifier = verifier(config)
+
+        if self.config['erc20']['etherscan-on']:
+            self.otc = etherscanCalls(config)
+        else:
+            self.otc = otherCalls(config)
 
         self.lastScannedBlock = self.db.lastScannedBlock("ETH")
 
@@ -25,9 +30,14 @@ class ETHChecker(object):
                 nextblock = self.otc.currentBlock() - self.config['erc20']['confirmations']
 
                 if nextblock > self.lastScannedBlock:
-                    self.lastScannedBlock += 1
-                    self.checkBlock(self.lastScannedBlock)
-                    self.db.updHeights(self.lastScannedBlock, "ETH")
+                    if self.config['erc20']['etherscan-on']:
+                        self.checkBlock(self.lastScannedBlock)
+                        self.db.updHeights(nextblock, "ETH")
+                        self.lastScannedBlock = self.db.lastScannedBlock("ETH")
+                    else:
+                        self.lastScannedBlock += 1
+                        self.checkBlock(self.lastScannedBlock)
+                        self.db.updHeights(self.lastScannedBlock, "ETH")
             except Exception as e:
                 self.lastScannedBlock -= 1
                 print('ERROR: Something went wrong during ETH block iteration: ' + traceback.TracebackException.from_exception(e))

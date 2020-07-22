@@ -146,16 +146,5 @@ class otherCalls(object):
 
             self.db.insError(sourceAddress, targetAddress, tnTxId, txid, amount, 'tx failed on network - manual intervention required')
             print("ERROR: tx failed on network - manual intervention required: " + txid)
-
-            #self.db.insTunnel('sending', sourceAddress, targetAddress)
-               
-            #gasprice = int(self.w3.eth.gasPrice * 1.5)
-            #gas = self.config['erc20']['gas'] * 2
-
-            #newtxId = self.sendTx(targetAddress, amount, gasprice, gas)
-
-            #self.db.updExecuted(id, sourceAddress, targetAddress, newtxId, tnTxId, amount, self.config['erc20']['fee'])
-            #self.db.updTunnel("verifying", sourceAddress, targetAddress)
             self.db.updTunnel("error", sourceAddress, targetAddress)
-            #self.verifyTx(newtxId, sourceAddress, targetAddress)
 
