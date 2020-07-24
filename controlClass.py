@@ -21,5 +21,28 @@ class controller(object):
 
     def run(self):
         #main routine to run continuesly
-        #TODO: check tunnel statusses / verify tx's
         print("INFO: starting controller")
+
+        while True:
+            print("INFO: Last scanned ETH block: " + str(self.db.lastScannedBlock("ETH")))
+            print("INFO: Last scanned TN block: " + str(self.db.lastScannedBlock("TN")))
+
+            #handle tunnels on status 'verifying'
+            to_verify = self.db.getTunnels(status='verifying')
+
+            if len(to_verify) > 0:
+                for address in to_verify:
+                    sourceAddress = address[0]
+                    targetAddress = address[1]
+
+                    txid = self.db.getExecuted(targetAddress=targetAddress)
+                    tx = {'id': txid[0][0]}
+
+                    print("INFO: verify tx: " + txid[0][0])
+                    if sourceAddress[:2] == '0x':
+                        self.tnc.verifyTx(tx, sourceAddress, targetAddress)
+                    else:
+                        self.otc.verifyTx(tx, sourceAddress, targetAddress)
+                        
+            #TODO: handle tunnels on status 'sending'
+            time.sleep(300)

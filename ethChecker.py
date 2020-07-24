@@ -23,7 +23,7 @@ class ETHChecker(object):
 
     def run(self):
         #main routine to run continuesly
-        print('INFO: started checking ETH blocks at: ' + str(self.lastScannedBlock))
+        #print('INFO: started checking ETH blocks at: ' + str(self.lastScannedBlock))
 
         while True:
             try:
@@ -78,10 +78,10 @@ class ETHChecker(object):
                             txInfo['recipient'] = targetAddress
                             self.faultHandler(txInfo, "senderror", e='outside amount ranges')
                             #self.db.delTunnel(sourceAddress, targetAddress)
-                            self.db.updTunnel("error", sourceAddress, targetAddress)
+                            self.db.updTunnel("error", sourceAddress, targetAddress, statusOld='created')
                         else:
                             try:
-                                self.db.updTunnel("sending", sourceAddress, targetAddress)
+                                self.db.updTunnel("sending", sourceAddress, targetAddress, statusOld='created')
                                 tx = self.tnc.sendTx(targetAddress, amount, 'Thanks for using our service!')
 
                                 if 'error' in tx:
@@ -89,15 +89,24 @@ class ETHChecker(object):
                                 else:
                                     print("INFO: send tx: " + str(tx))
 
-                                    self.db.insExecuted(txInfo['sender'], targetAddress, transaction.hex(), tx['id'], round(amountCheck), self.config['tn']['fee'])
+                                    self.db.insExecuted(txInfo['sender'], targetAddress, txInfo['id'], tx['id'], round(amountCheck), self.config['tn']['fee'])
                                     print('INFO: send tokens from eth to tn!')
 
                                     #self.db.delTunnel(txInfo['sender'], targetAddress)
-                                    self.db.updTunnel("verifying", sourceAddress, targetAddress)
+                                    self.db.updTunnel("verifying", sourceAddress, targetAddress, statusOld="sending")
                             except Exception as e:
+                                self.db.updTunnel("error", sourceAddress, targetAddress, statusOld="sending")
                                 self.faultHandler(txInfo, "txerror", e=e)
 
-                            self.tnc.verifyTx(tx)
+                            if len(tx) == 0:
+                                #TODO
+                                self.db.insError(sourceAddress, targetAddress, '', txInfo['id'], amountCheck, 'tx failed to send - manual intervention required')
+                                print("ERROR: tx failed to send - manual intervention required")
+                                self.db.updTunnel("error", sourceAddress, targetAddress, statusOld="sending")
+                            else:
+                                self.tnc.verifyTx(tx, sourceAddress, targetAddress)
+
+                            
         
     def faultHandler(self, tx, error, e=""):
         #handle transfers to the gateway that have problems

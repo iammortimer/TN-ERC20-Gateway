@@ -19,7 +19,7 @@ class TNChecker(object):
 
     def run(self):
         #main routine to run continuesly
-        print('INFO: started checking tn blocks at: ' + str(self.lastScannedBlock))
+        #print('INFO: started checking tn blocks at: ' + str(self.lastScannedBlock))
 
         while True:
             try:
@@ -53,6 +53,7 @@ class TNChecker(object):
                             self.faultHandler(transaction, "senderror", e='outside amount ranges')
                         else:
                             try:
+                                txId = None
                                 self.db.insTunnel('sending', transaction['sender'], targetAddress)
                                 txId = self.otc.sendTx(targetAddress, amount)
 
@@ -65,11 +66,17 @@ class TNChecker(object):
                                     print('INFO: send tokens from tn to erc20!')
 
                                     #self.db.delTunnel(transaction['sender'], targetAddress)
-                                    self.db.updTunnel("verifying", transaction['sender'], targetAddress)
+                                    self.db.updTunnel("verifying", transaction['sender'], targetAddress, statusOld='sending')
                             except Exception as e:
                                 self.faultHandler(transaction, "txerror", e=e)
 
-                            self.otc.verifyTx(txId, transaction['sender'], targetAddress)
+                            if txId is None:
+                                if targetAddress != 'invalid address':
+                                    self.db.insError(transaction['sender'], targetAddress, transaction['id'], '', amount, 'tx failed to send - manual intervention required')
+                                    print("ERROR: tx failed to send - manual intervention required")
+                                    self.db.updTunnel("error", transaction['sender'], targetAddress, statusOld="sending")
+                            else:
+                                self.otc.verifyTx(txId, transaction['sender'], targetAddress)
                 else:
                     self.faultHandler(transaction, 'noattachment')
         

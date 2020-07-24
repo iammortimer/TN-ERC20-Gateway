@@ -7,6 +7,6 @@ fastapi
 uvicorn
 jinja2
 aiofiles
-web3
 ethtoken
+web3
 pydantic

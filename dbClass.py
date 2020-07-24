@@ -97,6 +97,21 @@ class dbCalls(object):
         else:
             return {}
 
+    def getTunnels(self, status = ''):
+        if status != '':
+            sql = 'SELECT sourceAddress, targetAddress FROM tunnel WHERE status = ?'
+            values = (status,)
+        else:
+            return {}
+
+        cursor = self.dbCon.cursor()
+        qryResult = cursor.execute(sql, values).fetchall()
+
+        if len(qryResult) > 0:
+            return qryResult
+        else:
+            return {}
+
     def insTunnel(self, status, sourceAddress, targetAddress):
         sql = 'INSERT INTO tunnel ("sourceAddress", "targetAddress", "status", "timestamp") VALUES (?, ?, ?, CURRENT_TIMESTAMP)'
         values = (sourceAddress, targetAddress, status)
@@ -105,16 +120,19 @@ class dbCalls(object):
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
 
-    def updTunnel(self, status, sourceAddress, targetAddress):
-        sql = 'UPDATE tunnel SET "status" = ?, "timestamp" = CURRENT_TIMESTAMP WHERE status = "created" AND sourceAddress = ? and targetAddress = ?'
-        values = (status, sourceAddress, targetAddress)
+    def updTunnel(self, status, sourceAddress, targetAddress, statusOld = ''):
+        if statusOld == '':
+            statusOld = 'created'
+
+        sql = 'UPDATE tunnel SET "status" = ?, "timestamp" = CURRENT_TIMESTAMP WHERE status = ? AND sourceAddress = ? and targetAddress = ?'
+        values = (status, statusOld, sourceAddress, targetAddress)
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
 
     def delTunnel(self, sourceAddress, targetAddress):
-        sql = 'DELETE FROM tunnel WHERE (status = "created" OR status = "sending") AND sourceAddress = ? and targetAddress = ?'
+        sql = 'DELETE FROM tunnel WHERE sourceAddress = ? and targetAddress = ?'
         values = (sourceAddress, targetAddress)
 
         cursor = self.dbCon.cursor()
@@ -248,12 +266,13 @@ class dbCalls(object):
             return None
 
     def insVerified(self, chain, tx, block):
-        sql = 'INSERT INTO verified ("chain", "tx", "block") VALUES (?, ?, ?)'
-        values = (chain, tx, block)
+        if self.getVerified(tx) is None:
+            sql = 'INSERT INTO verified ("chain", "tx", "block") VALUES (?, ?, ?)'
+            values = (chain, tx, block)
 
-        cursor = self.dbCon.cursor()
-        qryResult = cursor.execute(sql, values)
-        self.dbCon.commit()
+            cursor = self.dbCon.cursor()
+            qryResult = cursor.execute(sql, values)
+            self.dbCon.commit()
 
 #other
     def checkTXs(self, address):
