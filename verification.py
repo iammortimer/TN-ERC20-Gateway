@@ -9,43 +9,79 @@ class verifier(object):
         self.tnc = tnCalls(config)
         self.otc = otherCalls(config)
 
-    def checkDeposit(self, address):
-        if not self.tnc.validateAddress(address):
-            return {'error': 'invalid address'}
+    def checkTX(self, targetAddress = '', sourceAddress = ''):
+        result = {'status': '', 'tx': '', 'block': '', 'error': ''}
+
+        if targetAddress != '':
+            address = targetAddress
+        elif  sourceAddress != '':
+            address = sourceAddress
         else:
-            tx = self.db.getExecuted(targetAddress=address)
+            result['status'] = 'error'
+            result['error'] = 'invalid address'
+            return result
 
-            if len(tx) == 0:
-                return {'error': 'no tx found'}
-            else:
-                result = self.db.getVerified(tx)
-
-                if result is None:
-                    return {'txVerified': False, 'tx': tx, 'block': 0} 
-                else:
-                    if result > 0:
-                        return {'txVerified': True, 'tx': tx, 'block': result} 
-                    else:
-                        return {'txVerified': False, 'tx': tx, 'block': result} 
-
-    def checkWD(self, address):
         if not self.tnc.validateAddress(address):
-            return {'error': 'invalid address'}
+            result['status'] = 'error'
+            result['error'] = 'invalid address'
+            return result
         else:
-            tx = self.db.getExecuted(sourceAddress=address)
+            tx = self.db.getTunnelStatus(targetAddress=address)
 
-            if len(tx) == 0:
-                return {'error': 'no tx found'}
-            else:
-                result = result = self.db.getVerified(tx)
+            if len(tx) != 0:
+                result['status'] = tx[0][0]
+                
+                if result['status'] == "sending" or result['status'] == "verifying":
+                    resexec = self.checkExecuted(targetAddress=targetAddress, sourceAddress=sourceAddress)
 
-                if result is None:
-                    return {'txVerified': False, 'tx': tx, 'block': 0} 
-                else:
-                    if result > 0:
-                        return {'txVerified': True, 'tx': tx, 'block': result} 
+                    if 'error' in resexec:
+                        result['error'] = resexec['error']
                     else:
-                        return {'txVerified': False, 'tx': tx, 'block': result} 
+                        result['tx'] = resexec['tx']
+                        result['block'] = resexec['block']
+                elif result['status'] == "created":
+                    return result
+                elif result['status'] == "error":
+                    resexec = self.db.getError(targetAddress=targetAddress, sourceAddress=sourceAddress)
+
+                    if len(resexec) != 0:
+                        result['error'] = resexec[0][0]
+                        if targetAddress != '':
+                            result['tx'] = resexec[0][2]
+                        else:
+                            result['tx'] = resexec[0][1]
+            else:
+                resexec = self.checkExecuted(targetAddress=targetAddress, sourceAddress=sourceAddress)
+
+                if 'error' in resexec:
+                    result['error'] = resexec['error']
+                else:
+                    result['tx'] = resexec['tx']
+                    result['block'] = resexec['block']
+
+        return result
+
+    def checkExecuted(self, targetAddress = '', sourceAddress = ''):
+        if targetAddress != '':
+            tx = self.db.getExecuted(targetAddress=targetAddress)
+        elif  sourceAddress != '':
+            tx = self.db.getExecuted(sourceAddress=sourceAddress)
+        else:
+            return {'error': 'invalid address'}
+        
+        if len(tx) == 0:
+            return {'error': 'no tx found'}
+        else:
+            tx = tx[0][0]
+            result = self.db.getVerified(tx)
+
+            if result is None:
+                return {'txVerified': False, 'tx': tx, 'block': 0} 
+            else:
+                if result > 0:
+                    return {'txVerified': True, 'tx': tx, 'block': result} 
+                else:
+                    return {'txVerified': False, 'tx': tx, 'block': result} 
 
     def checkHealth(self):
         connTN = self.chConnection('TN')

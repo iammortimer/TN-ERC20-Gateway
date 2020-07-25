@@ -8,4 +8,3 @@ templates/index_eth.html
 config_run.json
 test.py
 gateway.db-journal
-etherscanClass.py

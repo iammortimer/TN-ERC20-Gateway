@@ -35,20 +35,22 @@ class tnCalls(object):
     def validateAddress(self, address):
         return self.pwTN.validateAddress(address)
 
-    def verifyTx(self, tx):
+    def verifyTx(self, tx, sourceAddress = '', targetAddress = ''):
         try:
             time.sleep(60)
             verified = self.pwTN.tx(tx['id'])
 
             if verified['height'] > 0:
                 self.db.insVerified("TN", tx['id'], verified['height'])
-                print('tx to tn verified!')
+                print('INFO: tx to tn verified!')
+
+                self.db.delTunnel(sourceAddress, targetAddress)
             else:
                 self.db.insVerified("TN", tx['id'], 0)
-                print('tx to tn not verified!')
+                print('WARN: tx to tn not verified!')
         except:
             self.db.insVerified("TN", tx['id'], 0)
-            print('tx to tn not verified!')
+            print('WARN: tx to tn not verified!')
 
     def checkTx(self, tx):
         #check the transaction

@@ -63,15 +63,15 @@ class otherCalls(object):
 
             if verified['status'] == 1:
                 self.db.insVerified("ETH", txid, verified['blockNumber'])
-                print('tx to eth verified!')
+                print('INFO: tx to eth verified!')
 
                 self.db.delTunnel(sourceAddress, targetAddress)
             elif verified['status'] == 0:
-                print('tx failed to send!')
+                print('ERROR: tx failed to send!')
                 self.resendTx(txId)
         except:
             self.db.insVerified("ETH", txid, 0)
-            print('tx to eth not verified!')
+            print('WARN: tx to eth not verified!')
 
     def checkTx(self, tx):
         #check the transaction
@@ -88,8 +88,7 @@ class otherCalls(object):
                     decodedInput = contract.decode_function_input(transaction['input'])
                 except Exception as e:
                     self.lastScannedBlock = self.db.lastScannedBlock("ETH")
-                    print('Something went wrong during ETH block iteration at block ' + str(self.lastScannedBlock))
-                    print(traceback.TracebackException.from_exception(e))
+                    print('ERROR: Something went wrong during ETH block iteration at block ' + str(self.lastScannedBlock) + ': ' + traceback.TracebackException.from_exception(e))
                     return result
                 
                 recipient = decodedInput[1]['_to']
@@ -145,16 +144,6 @@ class otherCalls(object):
             amount = failedtx[0][6]
 
             self.db.insError(sourceAddress, targetAddress, tnTxId, txid, amount, 'tx failed on network - manual intervention required')
-
-            #self.db.insTunnel('sending', sourceAddress, targetAddress)
-               
-            #gasprice = int(self.w3.eth.gasPrice * 1.5)
-            #gas = self.config['erc20']['gas'] * 2
-
-            #newtxId = self.sendTx(targetAddress, amount, gasprice, gas)
-
-            #self.db.updExecuted(id, sourceAddress, targetAddress, newtxId, tnTxId, amount, self.config['erc20']['fee'])
-            #self.db.updTunnel("verifying", sourceAddress, targetAddress)
-            self.db.updTunnel("error", sourceAddress, targetAddress)
-            #self.verifyTx(newtxId, sourceAddress, targetAddress)
+            print("ERROR: tx failed on network - manual intervention required: " + txid)
+            self.db.updTunnel("error", sourceAddress, targetAddress, statusOld="verifying")
 

@@ -4,34 +4,43 @@ import sharedfunc
 from dbClass import dbCalls
 from tnClass import tnCalls
 from otherClass import otherCalls
+from etherscanClass import etherscanCalls
 from verification import verifier
 
 class ETHChecker(object):
     def __init__(self, config):
         self.config = config
         self.db = dbCalls(config)
-        self.otc = otherCalls(config)
         self.tnc = tnCalls(config)
         self.verifier = verifier(config)
+
+        if self.config['erc20']['etherscan-on']:
+            self.otc = etherscanCalls(config)
+        else:
+            self.otc = otherCalls(config)
 
         self.lastScannedBlock = self.db.lastScannedBlock("ETH")
 
     def run(self):
         #main routine to run continuesly
-        print('started checking ETH blocks at: ' + str(self.lastScannedBlock))
+        #print('INFO: started checking ETH blocks at: ' + str(self.lastScannedBlock))
 
         while True:
             try:
                 nextblock = self.otc.currentBlock() - self.config['erc20']['confirmations']
 
                 if nextblock > self.lastScannedBlock:
-                    self.lastScannedBlock += 1
-                    self.checkBlock(self.lastScannedBlock)
-                    self.db.updHeights(self.lastScannedBlock, "ETH")
+                    if self.config['erc20']['etherscan-on']:
+                        self.checkBlock(self.lastScannedBlock)
+                        self.db.updHeights(nextblock, "ETH")
+                        self.lastScannedBlock = self.db.lastScannedBlock("ETH")
+                    else:
+                        self.lastScannedBlock += 1
+                        self.checkBlock(self.lastScannedBlock)
+                        self.db.updHeights(self.lastScannedBlock, "ETH")
             except Exception as e:
                 self.lastScannedBlock -= 1
-                print('Something went wrong during ETH block iteration: ')
-                print(traceback.TracebackException.from_exception(e))
+                print('ERROR: Something went wrong during ETH block iteration: ' + traceback.TracebackException.from_exception(e))
 
             time.sleep(self.config['erc20']['timeInBetweenChecks'])
 
@@ -69,26 +78,35 @@ class ETHChecker(object):
                             txInfo['recipient'] = targetAddress
                             self.faultHandler(txInfo, "senderror", e='outside amount ranges')
                             #self.db.delTunnel(sourceAddress, targetAddress)
-                            self.db.updTunnel("error", sourceAddress, targetAddress)
+                            self.db.updTunnel("error", sourceAddress, targetAddress, statusOld='created')
                         else:
                             try:
-                                self.db.updTunnel("sending", sourceAddress, targetAddress)
+                                self.db.updTunnel("sending", sourceAddress, targetAddress, statusOld='created')
                                 tx = self.tnc.sendTx(targetAddress, amount, 'Thanks for using our service!')
 
                                 if 'error' in tx:
                                     self.faultHandler(txInfo, "senderror", e=tx['message'])
                                 else:
-                                    print("send tx: " + str(tx))
+                                    print("INFO: send tx: " + str(tx))
 
-                                    self.db.insExecuted(txInfo['sender'], targetAddress, transaction.hex(), tx['id'], round(amountCheck), self.config['tn']['fee'])
-                                    print('send tokens from eth to tn!')
+                                    self.db.insExecuted(txInfo['sender'], targetAddress, txInfo['id'], tx['id'], round(amountCheck), self.config['tn']['fee'])
+                                    print('INFO: send tokens from eth to tn!')
 
                                     #self.db.delTunnel(txInfo['sender'], targetAddress)
-                                    self.db.updTunnel("verifying", sourceAddress, targetAddress)
+                                    self.db.updTunnel("verifying", sourceAddress, targetAddress, statusOld="sending")
                             except Exception as e:
+                                self.db.updTunnel("error", sourceAddress, targetAddress, statusOld="sending")
                                 self.faultHandler(txInfo, "txerror", e=e)
 
-                            self.tnc.verifyTx(tx)
+                            if len(tx) == 0:
+                                #TODO
+                                self.db.insError(sourceAddress, targetAddress, '', txInfo['id'], amountCheck, 'tx failed to send - manual intervention required')
+                                print("ERROR: tx failed to send - manual intervention required")
+                                self.db.updTunnel("error", sourceAddress, targetAddress, statusOld="sending")
+                            else:
+                                self.tnc.verifyTx(tx, sourceAddress, targetAddress)
+
+                            
         
     def faultHandler(self, tx, error, e=""):
         #handle transfers to the gateway that have problems
@@ -97,14 +115,14 @@ class ETHChecker(object):
 
         if error == "notunnel":
             self.db.insError(tx['sender'], '', '', tx['id'], amount, 'no tunnel found for sender')
-            print(timestampStr + " - Error: no tunnel found for transaction from " + tx['sender'] + " - check errors table.")
+            print("ERROR: " + timestampStr + " - Error: no tunnel found for transaction from " + tx['sender'] + " - check errors table.")
 
         if error == "txerror":
             targetAddress = tx['recipient']
             self.db.insError(tx['sender'], targetAddress, '', tx['id'], amount, 'tx error, possible incorrect address', str(e))
-            print(timestampStr + " - Error: on outgoing transaction for transaction from " + tx['sender'] + " - check errors table.")
+            print("ERROR: " + timestampStr + " - Error: on outgoing transaction for transaction from " + tx['sender'] + " - check errors table.")
 
         if error == "senderror":
             targetAddress = tx['recipient']
             self.db.insError(tx['sender'], targetAddress, '', tx['id'], amount, 'tx error, check exception error', str(e))
-            print(timestampStr + " - Error: on outgoing transaction for transaction from " + tx['sender'] + " - check errors table.")
+            print("ERROR: " + timestampStr + " - Error: on outgoing transaction for transaction from " + tx['sender'] + " - check errors table.")

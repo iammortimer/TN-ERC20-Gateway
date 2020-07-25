@@ -19,7 +19,7 @@ class TNChecker(object):
 
     def run(self):
         #main routine to run continuesly
-        print('started checking tn blocks at: ' + str(self.lastScannedBlock))
+        #print('INFO: started checking tn blocks at: ' + str(self.lastScannedBlock))
 
         while True:
             try:
@@ -31,8 +31,7 @@ class TNChecker(object):
                     self.db.updHeights(self.lastScannedBlock, 'TN')
             except Exception as e:
                 self.lastScannedBlock -= 1
-                print('Something went wrong during tn block iteration: ')
-                print(traceback.TracebackException.from_exception(e))
+                print('ERROR: Something went wrong during tn block iteration: ' + traceback.TracebackException.from_exception(e))
 
             time.sleep(self.config['tn']['timeInBetweenChecks'])
 
@@ -54,23 +53,30 @@ class TNChecker(object):
                             self.faultHandler(transaction, "senderror", e='outside amount ranges')
                         else:
                             try:
+                                txId = None
                                 self.db.insTunnel('sending', transaction['sender'], targetAddress)
                                 txId = self.otc.sendTx(targetAddress, amount)
 
                                 if not(str(txId.hex()).startswith('0x')):
                                     self.faultHandler(transaction, "senderror", e=txId.hex())
                                 else:
-                                    print("send tx: " + str(txId.hex()))
+                                    print("INFO: send tx: " + str(txId.hex()))
 
                                     self.db.insExecuted(transaction['sender'], targetAddress, txId.hex(), transaction['id'], round(amount), self.config['erc20']['fee'])
-                                    print('send tokens from tn to erc20!')
+                                    print('INFO: send tokens from tn to erc20!')
 
                                     #self.db.delTunnel(transaction['sender'], targetAddress)
-                                    self.db.updTunnel("verifying", transaction['sender'], targetAddress)
+                                    self.db.updTunnel("verifying", transaction['sender'], targetAddress, statusOld='sending')
                             except Exception as e:
                                 self.faultHandler(transaction, "txerror", e=e)
 
-                            self.otc.verifyTx(txId, transaction['sender'], targetAddress)
+                            if txId is None:
+                                if targetAddress != 'invalid address':
+                                    self.db.insError(transaction['sender'], targetAddress, transaction['id'], '', amount, 'tx failed to send - manual intervention required')
+                                    print("ERROR: tx failed to send - manual intervention required")
+                                    self.db.updTunnel("error", transaction['sender'], targetAddress, statusOld="sending")
+                            else:
+                                self.otc.verifyTx(txId, transaction['sender'], targetAddress)
                 else:
                     self.faultHandler(transaction, 'noattachment')
         
@@ -81,14 +87,14 @@ class TNChecker(object):
 
         if error == "noattachment":
             self.db.insError(tx['sender'], "", tx['id'], "", amount, "no attachment found on transaction")
-            print(timestampStr + " - Error: no attachment found on transaction from " + tx['sender'] + " - check errors table.")
+            print("ERROR: " + timestampStr + " - Error: no attachment found on transaction from " + tx['sender'] + " - check errors table.")
 
         if error == "txerror":
             targetAddress = base58.b58decode(tx['attachment']).decode()
             self.db.insError(tx['sender'], targetAddress, tx['id'], "", amount, "tx error, possible incorrect address", str(e))
-            print(timestampStr + " - Error: on outgoing transaction for transaction from " + tx['sender'] + " - check errors table.")
+            print("ERROR: " + timestampStr + " - Error: on outgoing transaction for transaction from " + tx['sender'] + " - check errors table.")
 
         if error == "senderror":
             targetAddress = base58.b58decode(tx['attachment']).decode()
             self.db.insError(tx['sender'], targetAddress, tx['id'], "", amount, "tx error, check exception error", str(e))
-            print(timestampStr + " - Error: on outgoing transaction for transaction from " + tx['sender'] + " - check errors table.")
+            print("ERROR: " + timestampStr + " - Error: on outgoing transaction for transaction from " + tx['sender'] + " - check errors table.")
