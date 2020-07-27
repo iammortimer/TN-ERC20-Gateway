@@ -40,7 +40,7 @@ class ETHChecker(object):
                         self.db.updHeights(self.lastScannedBlock, "ETH")
             except Exception as e:
                 self.lastScannedBlock -= 1
-                print('ERROR: Something went wrong during ETH block iteration: ' + traceback.TracebackException.from_exception(e))
+                print('ERROR: Something went wrong during ETH block iteration: ' + str(traceback.TracebackException.from_exception(e)))
 
             time.sleep(self.config['erc20']['timeInBetweenChecks'])
 
@@ -89,7 +89,7 @@ class ETHChecker(object):
                                 else:
                                     print("INFO: send tx: " + str(tx))
 
-                                    self.db.insExecuted(txInfo['sender'], targetAddress, txInfo['id'], tx['id'], round(amountCheck), self.config['tn']['fee'])
+                                    self.db.insExecuted(txInfo['sender'], targetAddress, txInfo['id'], tx['id'], amountCheck, self.config['tn']['fee'])
                                     print('INFO: send tokens from eth to tn!')
 
                                     #self.db.delTunnel(txInfo['sender'], targetAddress)

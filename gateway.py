@@ -195,7 +195,7 @@ async def checkTunnel(address: str):
 
     result = dbc.getTargetAddress(address)
     if len(result) == 0:
-        targetAddress = None
+        targetAddress = ""
     else:
         targetAddress = result
 
