@@ -15,11 +15,11 @@ via pip and run the gateway by
 python3 start.py
 ```
 ## Configuration of the config file
-The config.json file includes all necessary settings that need to be connfigured in order to run a proper gateway:
+The config.json file includes all necessary settings that need to be configured in order to run a proper gateway:
 ```
 {
     "main": {
-        "port": <portnumber to run the webinterface on>,
+        "port": <port number to run the webinterface on>,
         "name": "Tokenname",
         "company": "Gateways Ltd",
         "contact-email": "info@contact.us",
@@ -49,6 +49,8 @@ The config.json file includes all necessary settings that need to be connfigured
         "network_fee": <the tx part of the fee calculated in the proxy token, e.g., 0.1>,
         "timeInBetweenChecks": <seconds in between a check for a new block>,
         "confirmations": <number of confirmations necessary in order to accept a transaction>,
+        "etherscan-on": <true or false, depending on if you want to use etherscan instead of a normal eth node for most calls>,
+        "etherscan-apikey": <etherscan apikey, required if you want to use etherscan alternative>,
         "network": "Ethereum"
     },
     "tn": {
@@ -82,6 +84,7 @@ After starting the gateway, there are also a couple of management interfaces whi
 ```
     /errors: This will show an overview of detected errors during processing of blocks or transferring funds
     /executed: This will show an overview of executed transactions through the gateway
+    /docs: Swagger documentation for included API calls
 ```
 
 # Disclaimer
