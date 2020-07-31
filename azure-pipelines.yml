@@ -22,7 +22,7 @@ stages:
       displayName: Build an image
       inputs:
         containerRegistry: 'docker_polaritydevops'
-        repository: 'polarity-TN-ERC20-Gateway'
+        repository: 'CryptoBrokersGlobal/polarity-TN-ERC20-Gateway'
         command: buildAndPush
         dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
         tags: |
