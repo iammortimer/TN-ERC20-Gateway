@@ -97,6 +97,7 @@ class ETHChecker(object):
                             except Exception as e:
                                 self.db.updTunnel("error", sourceAddress, targetAddress, statusOld="sending")
                                 self.faultHandler(txInfo, "txerror", e=e)
+                                continue
 
                             if len(tx) == 0:
                                 #TODO
