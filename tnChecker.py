@@ -69,6 +69,7 @@ class TNChecker(object):
                                     self.db.updTunnel("verifying", transaction['sender'], targetAddress, statusOld='sending')
                             except Exception as e:
                                 self.faultHandler(transaction, "txerror", e=e)
+                                continue
 
                             if txId is None:
                                 if targetAddress != 'invalid address':
