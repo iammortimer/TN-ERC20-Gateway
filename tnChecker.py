@@ -31,7 +31,7 @@ class TNChecker(object):
                     self.db.updHeights(self.lastScannedBlock, 'TN')
             except Exception as e:
                 self.lastScannedBlock -= 1
-                print('ERROR: Something went wrong during tn block iteration: ' + traceback.TracebackException.from_exception(e))
+                print('ERROR: Something went wrong during tn block iteration: ' + str(traceback.TracebackException.from_exception(e)))
 
             time.sleep(self.config['tn']['timeInBetweenChecks'])
 
@@ -62,13 +62,14 @@ class TNChecker(object):
                                 else:
                                     print("INFO: send tx: " + str(txId.hex()))
 
-                                    self.db.insExecuted(transaction['sender'], targetAddress, txId.hex(), transaction['id'], round(amount), self.config['erc20']['fee'])
+                                    self.db.insExecuted(transaction['sender'], targetAddress, txId.hex(), transaction['id'], amount, self.config['erc20']['fee'])
                                     print('INFO: send tokens from tn to erc20!')
 
                                     #self.db.delTunnel(transaction['sender'], targetAddress)
                                     self.db.updTunnel("verifying", transaction['sender'], targetAddress, statusOld='sending')
                             except Exception as e:
                                 self.faultHandler(transaction, "txerror", e=e)
+                                continue
 
                             if txId is None:
                                 if targetAddress != 'invalid address':
