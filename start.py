@@ -3,7 +3,10 @@ import json
 import threading
 import uvicorn
 
-import setupDB
+from dbClass import dbCalls
+from tnClass import tnCalls
+from otherClass import otherCalls
+
 from tnChecker import TNChecker
 from ethChecker import ETHChecker
 from controlClass import controller
@@ -11,19 +14,30 @@ from controlClass import controller
 with open('config.json') as json_file:
     config = json.load(json_file)
 
+def initialisedb():
+    #get current TN block:
+    tnlatestBlock = tnCalls(config).currentBlock()
+    dbCalls(config).insHeights(tnlatestBlock, 'TN')
+
+    #get current ETH block:
+    ethlatestBlock = otherCalls(config).currentBlock()
+    dbCalls(config).insHeights(ethlatestBlock, 'ETH')
+
 def main():
     #check db
-    try:
-        dbCon = sqlite.connect('gateway.db')
-        result = dbCon.cursor().execute('SELECT chain, height FROM heights WHERE chain = "TN" or chain = "ETH"').fetchall()
-        if len(result) == 0:
-            setupDB.initialisedb(config)
-    except:
-        setupDB.createdb()
-        setupDB.initialisedb(config)
+    dbc = dbCalls(config)
 
-    setupDB.createVerify()
-    setupDB.updateExisting()
+    try:
+        result = dbc.lastScannedBlock("TN")
+
+        if len(result) == 0:
+            initialisedb()
+    except:
+        dbc.createdb()
+        initialisedb()
+
+    dbc.createVerify()
+    dbc.updateExisting()
         
     #load and start threads
     tn = TNChecker(config)

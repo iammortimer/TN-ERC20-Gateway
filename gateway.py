@@ -300,13 +300,16 @@ async def api_wdCheck(tnAddress: str):
 
 @app.get("/api/checktxs/{tnAddress}", response_model=cTxs)
 async def api_checktxs(tnAddress: str):
-    result = dbc.checkTXs(address=tnAddress)
-
-    if 'error' in result:
-        temp = cTxs(error=result['error'])
+    if not tnc.validateAddress(address):
+        temp = cTxs(error='invalid address')
     else:
-        temp = cTxs(transactions=result)
-        
+        result = dbc.checkTXs(address=tnAddress)
+
+        if 'error' in result:
+            temp = cTxs(error=result['error'])
+        else:
+            temp = cTxs(transactions=result)
+            
     return temp
 
 @app.get("/api/checktxs", response_model=cTxs)
