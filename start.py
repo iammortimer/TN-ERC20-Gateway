@@ -1,4 +1,3 @@
-import sqlite3 as sqlite
 import json
 import threading
 import uvicorn
