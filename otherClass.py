@@ -106,7 +106,7 @@ class otherCalls(object):
         amount = int(round(amount))
 
         token = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
-        nonce = self.w3.eth.getTransactionCount(self.config['erc20']['gatewayAddress'])
+        nonce = self.w3.eth.getTransactionCount(self.config['erc20']['gatewayAddress'], 'pending')
 
         if gasprice == None:
             if self.config['erc20']['gasprice'] > 0:
