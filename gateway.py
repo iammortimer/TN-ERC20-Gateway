@@ -9,6 +9,7 @@ from verification import verifier
 from dbClass import dbCalls
 from otherClass import otherCalls
 from tnClass import tnCalls
+from etherscanClass import etherscanCalls
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -116,7 +117,12 @@ with open('config.json') as json_file:
 
 dbc = dbCalls(config)
 tnc = tnCalls(config)
-otc = otherCalls(config)
+
+if config['erc20']['etherscan-on']:
+    otc = etherscanCalls(config)
+else:
+    otc = otherCalls(config)
+
 checkit = verifier(config)
 
 def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):

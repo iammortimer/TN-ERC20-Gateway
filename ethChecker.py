@@ -86,6 +86,7 @@ class ETHChecker(object):
 
                                 if 'error' in tx:
                                     self.faultHandler(txInfo, "senderror", e=tx['message'])
+                                    self.db.updTunnel("error", sourceAddress, targetAddress, statusOld="sending")
                                 else:
                                     print("INFO: send tx: " + str(tx))
 

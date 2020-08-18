@@ -59,6 +59,7 @@ class TNChecker(object):
 
                                 if not(str(txId.hex()).startswith('0x')):
                                     self.faultHandler(transaction, "senderror", e=txId.hex())
+                                    self.db.updTunnel("error", transaction['sender'], targetAddress, statusOld="sending")
                                 else:
                                     print("INFO: send tx: " + str(txId.hex()))
 
