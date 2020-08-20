@@ -1,13 +1,18 @@
 from dbClass import dbCalls
 from tnClass import tnCalls
 from otherClass import otherCalls
+from etherscanClass import etherscanCalls
 
 class verifier(object):
     def __init__(self, config):
         self.config = config
         self.db = dbCalls(config)
         self.tnc = tnCalls(config)
-        self.otc = otherCalls(config)
+
+        if self.config['erc20']['etherscan-on']:
+            self.otc = etherscanCalls(config)
+        else:
+            self.otc = otherCalls(config)
 
     def checkTX(self, targetAddress = '', sourceAddress = ''):
         result = {'status': '', 'tx': '', 'block': '', 'error': ''}

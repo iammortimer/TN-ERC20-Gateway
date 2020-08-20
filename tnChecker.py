@@ -5,13 +5,19 @@ import sharedfunc
 from dbClass import dbCalls
 from tnClass import tnCalls
 from otherClass import otherCalls
+from etherscanClass import etherscanCalls
 from verification import verifier
 
 class TNChecker(object):
     def __init__(self, config):
         self.config = config
         self.db = dbCalls(config)
-        self.otc = otherCalls(config)
+
+        if self.config['erc20']['etherscan-on']:
+            self.otc = etherscanCalls(config)
+        else:
+            self.otc = otherCalls(config)
+
         self.tnc = tnCalls(config)
         self.verifier = verifier(config)
 
