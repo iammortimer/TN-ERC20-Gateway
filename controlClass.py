@@ -36,12 +36,13 @@ class controller(object):
                     targetAddress = address[1]
 
                     txid = self.db.getExecuted(targetAddress=targetAddress)
-                    tx = {'id': txid[0][0]}
 
                     print("INFO: verify tx: " + txid[0][0])
                     if sourceAddress[:2] == '0x':
+                        tx = {'id': txid[0][0]}
                         self.tnc.verifyTx(tx, sourceAddress, targetAddress)
                     else:
+                        tx = txid[0][0]
                         self.otc.verifyTx(tx, sourceAddress, targetAddress)
                         
             #TODO: handle tunnels on status 'sending'
