@@ -9,7 +9,7 @@ class verifier(object):
         self.db = dbCalls(config)
         self.tnc = tnCalls(config)
 
-        if self.config['erc20']['etherscan-on']:
+        if self.config['other']['etherscan-on']:
             self.otc = etherscanCalls(config)
         else:
             self.otc = otherCalls(config)

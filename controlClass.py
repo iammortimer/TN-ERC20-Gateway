@@ -14,7 +14,7 @@ class controller(object):
         self.tnc = tnCalls(config)
         self.verifier = verifier(config)
 
-        if self.config['erc20']['etherscan-on']:
+        if self.config['other']['etherscan-on']:
             self.otc = etherscanCalls(config)
         else:
             self.otc = otherCalls(config)
@@ -38,7 +38,7 @@ class controller(object):
                     txid = self.db.getExecuted(targetAddress=targetAddress)
 
                     print("INFO: verify tx: " + txid[0][0])
-                    if sourceAddress[:2] == '0x':
+                    if self.otc.validateAddress(sourceAddress):
                         tx = {'id': txid[0][0]}
                         self.tnc.verifyTx(tx, sourceAddress, targetAddress)
                     else:

@@ -14,7 +14,7 @@ class ETHChecker(object):
         self.tnc = tnCalls(config)
         self.verifier = verifier(config)
 
-        if self.config['erc20']['etherscan-on']:
+        if self.config['other']['etherscan-on']:
             self.otc = etherscanCalls(config)
         else:
             self.otc = otherCalls(config)
@@ -27,10 +27,10 @@ class ETHChecker(object):
 
         while True:
             try:
-                nextblock = self.otc.currentBlock() - self.config['erc20']['confirmations']
+                nextblock = self.otc.currentBlock() - self.config['other']['confirmations']
 
                 if nextblock > self.lastScannedBlock:
-                    if self.config['erc20']['etherscan-on']:
+                    if self.config['other']['etherscan-on']:
                         self.checkBlock(self.lastScannedBlock)
                         self.db.updHeights(nextblock, "ETH")
                         self.lastScannedBlock = self.db.lastScannedBlock("ETH")
@@ -42,7 +42,7 @@ class ETHChecker(object):
                 self.lastScannedBlock -= 1
                 print('ERROR: Something went wrong during ETH block iteration: ' + str(traceback.TracebackException.from_exception(e)))
 
-            time.sleep(self.config['erc20']['timeInBetweenChecks'])
+            time.sleep(self.config['other']['timeInBetweenChecks'])
 
     def checkBlock(self, heightToCheck):
         if self.db.doWeHaveTunnels:

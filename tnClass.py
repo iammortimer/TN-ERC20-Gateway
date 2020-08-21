@@ -30,7 +30,7 @@ class tnCalls(object):
         myBalance = self.tnAddress.balance(assetId=self.config['tn']['assetId'])
         myBalance /= pow(10, self.config['tn']['decimals'])
 
-        return int(round(myBalance))
+        return myBalance
 
     def validateAddress(self, address):
         return self.pwTN.validateAddress(address)

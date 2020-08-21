@@ -118,7 +118,7 @@ with open('config.json') as json_file:
 dbc = dbCalls(config)
 tnc = tnCalls(config)
 
-if config['erc20']['etherscan-on']:
+if config['other']['etherscan-on']:
     otc = etherscanCalls(config)
 else:
     otc = otherCalls(config)
@@ -153,9 +153,9 @@ async def index(request: Request):
                                                      "tn_gateway_fee":config['tn']['gateway_fee'],
                                                      "tn_network_fee":config['tn']['network_fee'],
                                                      "tn_total_fee":config['tn']['network_fee']+config['tn']['gateway_fee'],
-                                                     "eth_gateway_fee":config['erc20']['gateway_fee'],
-                                                     "eth_network_fee":config['erc20']['network_fee'],
-                                                     "eth_total_fee":config['erc20']['network_fee'] + config['erc20']['gateway_fee'],
+                                                     "eth_gateway_fee":config['other']['gateway_fee'],
+                                                     "eth_network_fee":config['other']['network_fee'],
+                                                     "eth_total_fee":config['other']['network_fee'] + config['other']['gateway_fee'],
                                                      "fee": config['tn']['fee'],
                                                      "company": config['main']['company'],
                                                      "email": config['main']['contact-email'],
@@ -165,7 +165,7 @@ async def index(request: Request):
                                                      "ethHeight": heights['Other'],
                                                      "tnHeight": heights['TN'],
                                                      "tnAddress": config['tn']['gatewayAddress'],
-                                                     "ethAddress": config['erc20']['gatewayAddress'],
+                                                     "ethAddress": config['other']['gatewayAddress'],
                                                      "disclaimer": config['main']['disclaimer']})
 
 @app.get('/heights', response_model=cHeights)
@@ -269,9 +269,9 @@ async def api_fullinfo():
             "tn_gateway_fee":config['tn']['gateway_fee'],
             "tn_network_fee":config['tn']['network_fee'],
             "tn_total_fee":config['tn']['network_fee']+config['tn']['gateway_fee'],
-            "other_gateway_fee":config['erc20']['gateway_fee'],
-            "other_network_fee":config['erc20']['network_fee'],
-            "other_total_fee":config['erc20']['network_fee'] + config['erc20']['gateway_fee'],
+            "other_gateway_fee":config['other']['gateway_fee'],
+            "other_network_fee":config['other']['network_fee'],
+            "other_total_fee":config['other']['network_fee'] + config['other']['gateway_fee'],
             "fee": config['tn']['fee'],
             "company": config['main']['company'],
             "email": config['main']['contact-email'],
@@ -282,8 +282,8 @@ async def api_fullinfo():
             "tnHeight": heights['TN'],
             "tnAddress": config['tn']['gatewayAddress'],
             "tnColdAddress": config['tn']['coldwallet'],
-            "otherAddress": config['erc20']['gatewayAddress'],
-            "otherNetwork": config['erc20']['network'],
+            "otherAddress": config['other']['gatewayAddress'],
+            "otherNetwork": config['other']['network'],
             "disclaimer": config['main']['disclaimer'],
             "tn_balance": tnBalance,
             "other_balance": otherBalance,

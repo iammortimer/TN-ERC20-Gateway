@@ -11,7 +11,7 @@ class etherscanCalls(object):
         self.db = dbCalls(config)
         self.otc = otherCalls(config)
 
-        self.apikey = self.config['erc20']['etherscan-apikey']
+        self.apikey = self.config['other']['etherscan-apikey']
         self.url = 'https://api.etherscan.io/api?'
 
         self.lastScannedBlock = self.db.lastScannedBlock("ETH")
@@ -25,7 +25,7 @@ class etherscanCalls(object):
 
     def getBlock(self, height):
         time.sleep(2)
-        url = self.url + 'module=account&action=tokentx&address=' + self.config['erc20']['gatewayAddress'] + '&startblock=' + str(height) + '&endblock=' + str((self.currentBlock() - self.config['erc20']['confirmations'])) + '&sort=asc&apikey=' + self.apikey
+        url = self.url + 'module=account&action=tokentx&address=' + self.config['other']['gatewayAddress'] + '&startblock=' + str(height) + '&endblock=' + str((self.currentBlock() - self.config['other']['confirmations'])) + '&sort=asc&apikey=' + self.apikey
         result = requests.get(url).json()
 
         if result['status'] == '1':
@@ -37,16 +37,16 @@ class etherscanCalls(object):
 
     def currentBalance(self):
         time.sleep(2)
-        url = self.url + 'module=account&action=tokenbalance&contractaddress=' + self.config['erc20']['contract']['address'] + '&address=' + self.config['erc20']['gatewayAddress'] + '&tag=latest&apikey=' + self.apikey
+        url = self.url + 'module=account&action=tokenbalance&contractaddress=' + self.config['other']['contract']['address'] + '&address=' + self.config['other']['gatewayAddress'] + '&tag=latest&apikey=' + self.apikey
         result = requests.get(url).json()
 
-        if result['status'] == 1:
-            balance = int(result['result'], 16)
-            balance /= pow(10, self.config['erc20']['contract']['decimals'])
+        if result['status'] == '1':
+            balance = int(result['result'])
+            balance /= pow(10, self.config['other']['contract']['decimals'])
         else:
             balance = 0
 
-        return int(round(balance))
+        return balance
 
     def normalizeAddress(self, address):
         return self.otc.normalizeAddress(address)
@@ -84,12 +84,12 @@ class etherscanCalls(object):
         tx['contractAddress'] = self.normalizeAddress(tx['contractAddress'])
         tx['to'] = self.normalizeAddress(tx['to'])
 
-        if tx['contractAddress'] == self.config['erc20']['contract']['address'] and tx['to'] == self.config['erc20']['gatewayAddress']:
+        if tx['contractAddress'] == self.config['other']['contract']['address'] and tx['to'] == self.config['other']['gatewayAddress']:
                 sender = self.normalizeAddress(tx['from'])
-                amount = int(tx['value']) / 10 ** self.config['erc20']['contract']['decimals']
+                amount = int(tx['value']) / 10 ** self.config['other']['contract']['decimals']
 
                 if not self.db.didWeSendTx(tx['hash']): 
-                    result = { 'sender': sender, 'function': 'transfer', 'recipient': tx['to'], 'amount': amount, 'token': self.config['erc20']['contract']['address'], 'id': tx['hash'] }
+                    result = { 'sender': sender, 'function': 'transfer', 'recipient': tx['to'], 'amount': amount, 'token': self.config['other']['contract']['address'], 'id': tx['hash'] }
 
         return result
 
