@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from verification import verifier
 from dbClass import dbCalls
+from dbPGClass import dbPGCalls
 from otherClass import otherCalls
 from tnClass import tnCalls
 from etherscanClass import etherscanCalls
@@ -115,13 +116,17 @@ templates = Jinja2Templates(directory="templates")
 with open('config.json') as json_file:
     config = json.load(json_file)
 
-dbc = dbCalls(config)
 tnc = tnCalls(config)
 
 if config['other']['etherscan-on']:
     otc = etherscanCalls(config)
 else:
     otc = otherCalls(config)
+
+if config['main']['use-pg']:
+    dbc = dbPGCalls(config)
+else:
+    dbc = dbCalls(config)
 
 checkit = verifier(config)
 

@@ -3,13 +3,18 @@ import requests
 import traceback
 import time
 from dbClass import dbCalls
+from dbPGClass import dbPGCalls
 from otherClass import otherCalls
 
 class etherscanCalls(object):
     def __init__(self, config):
         self.config = config
-        self.db = dbCalls(config)
         self.otc = otherCalls(config)
+
+        if self.config['main']['use-pg']:
+            self.db = dbPGCalls(config)
+        else:
+            self.db = dbCalls(config)
 
         self.apikey = self.config['other']['etherscan-apikey']
         self.url = 'https://api.etherscan.io/api?'

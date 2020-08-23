@@ -2,6 +2,7 @@ import time
 import traceback
 import sharedfunc
 from dbClass import dbCalls
+from dbPGClass import dbPGCalls
 from tnClass import tnCalls
 from otherClass import otherCalls
 from etherscanClass import etherscanCalls
@@ -10,7 +11,6 @@ from verification import verifier
 class controller(object):
     def __init__(self, config):
         self.config = config
-        self.db = dbCalls(config)
         self.tnc = tnCalls(config)
         self.verifier = verifier(config)
 
@@ -19,9 +19,29 @@ class controller(object):
         else:
             self.otc = otherCalls(config)
 
+        if self.config['main']['use-pg']:
+            self.db = dbPGCalls(config)
+        else:
+            self.db = dbCalls(config)
+
     def run(self):
         #main routine to run continuesly
         print("INFO: starting controller")
+
+        #handle unverified tx
+        to_verify = self.db.getUnVerified()
+
+        if len(to_verify) > 0:
+            for txV in to_verify:
+
+                if txV[1] != 'TN':
+                    print("INFO: verify tx: " + txV[2])
+                    tx = txV[2]
+                    self.otc.verifyTx(tx)
+                else:
+                    print("INFO: verify tx: " + txV[2])
+                    tx = {'id': txV[2]}
+                    self.tnc.verifyTx(tx)
 
         while True:
             print("INFO: Last scanned ETH block: " + str(self.db.lastScannedBlock("ETH")))
@@ -35,15 +55,16 @@ class controller(object):
                     sourceAddress = address[0]
                     targetAddress = address[1]
 
-                    txid = self.db.getExecuted(targetAddress=targetAddress)
-
-                    print("INFO: verify tx: " + txid[0][0])
                     if self.otc.validateAddress(sourceAddress):
+                        txid = self.db.getExecuted(targetAddress=targetAddress)
+                        print("INFO: verify tx: " + txid[0][0])
                         tx = {'id': txid[0][0]}
                         self.tnc.verifyTx(tx, sourceAddress, targetAddress)
                     else:
+                        txid = self.db.getExecuted(sourceAddress=sourceAddress)
+                        print("INFO: verify tx: " + txid[0][0])
                         tx = txid[0][0]
                         self.otc.verifyTx(tx, sourceAddress, targetAddress)
-                        
+
             #TODO: handle tunnels on status 'sending'
-            time.sleep(300)
+            time.sleep(600)

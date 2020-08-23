@@ -1,4 +1,5 @@
 from dbClass import dbCalls
+from dbPGClass import dbPGCalls
 from tnClass import tnCalls
 from otherClass import otherCalls
 from etherscanClass import etherscanCalls
@@ -6,8 +7,12 @@ from etherscanClass import etherscanCalls
 class verifier(object):
     def __init__(self, config):
         self.config = config
-        self.db = dbCalls(config)
         self.tnc = tnCalls(config)
+
+        if self.config['main']['use-pg']:
+            self.db = dbPGCalls(config)
+        else:
+            self.db = dbCalls(config)
 
         if self.config['other']['etherscan-on']:
             self.otc = etherscanCalls(config)
@@ -160,7 +165,7 @@ class verifier(object):
             lastscanned = self.db.lastScannedBlock("TN")
         else:
             try:
-                current = self.otc.currentBlock() - self.config["erc20"]["confirmations"]
+                current = self.otc.currentBlock() - self.config["other"]["confirmations"]
             except:
                 current = 0
 

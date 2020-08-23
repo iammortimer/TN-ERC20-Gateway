@@ -4,11 +4,17 @@ import base58
 import PyCWaves
 import requests
 from dbClass import dbCalls
+from dbPGClass import dbPGCalls
 
 class tnCalls(object):
     def __init__(self, config):
         self.config = config
-        self.db = dbCalls(config)
+
+        if self.config['main']['use-pg']:
+            self.db = dbPGCalls(config)
+        else:
+            self.db = dbCalls(config)
+
         self.node = self.config['tn']['node']
 
         self.pwTN = PyCWaves.PyCWaves()

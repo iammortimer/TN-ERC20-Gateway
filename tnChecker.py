@@ -3,6 +3,7 @@ import traceback
 import base58
 import sharedfunc
 from dbClass import dbCalls
+from dbPGClass import dbPGCalls
 from tnClass import tnCalls
 from otherClass import otherCalls
 from etherscanClass import etherscanCalls
@@ -11,7 +12,11 @@ from verification import verifier
 class TNChecker(object):
     def __init__(self, config):
         self.config = config
-        self.db = dbCalls(config)
+
+        if self.config['main']['use-pg']:
+            self.db = dbPGCalls(config)
+        else:
+            self.db = dbCalls(config)
 
         if self.config['other']['etherscan-on']:
             self.otc = etherscanCalls(config)

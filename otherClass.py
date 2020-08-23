@@ -3,11 +3,17 @@ import traceback
 from web3 import Web3
 from ethtoken.abi import EIP20_ABI
 from dbClass import dbCalls
+from dbPGClass import dbPGCalls
 
 class otherCalls(object):
     def __init__(self, config):
         self.config = config
-        self.db = dbCalls(config)
+
+        if self.config['main']['use-pg']:
+            self.db = dbPGCalls(config)
+        else:
+            self.db = dbCalls(config)
+
         self.w3 = self.getWeb3Instance()
         self.privatekey = os.getenv(self.config['other']['seedenvname'], self.config['other']['privateKey'])
 
