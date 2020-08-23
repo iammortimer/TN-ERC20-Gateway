@@ -311,7 +311,7 @@ async def api_wdCheck(tnAddress: str):
 
 @app.get("/api/checktxs/{tnAddress}", response_model=cTxs)
 async def api_checktxs(tnAddress: str):
-    if not tnc.validateAddress(address):
+    if not tnc.validateAddress(tnAddress):
         temp = cTxs(error='invalid address')
     else:
         result = dbc.checkTXs(address=tnAddress)

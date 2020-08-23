@@ -70,13 +70,6 @@ class dbPGCalls(object):
                 exception text
         );
         '''
-        cursor = self.dbCon.cursor()
-        cursor.execute(sql.SQL(createHeightTable))
-        cursor.execute(sql.SQL(createTunnelTable))
-        cursor.execute(sql.SQL(createTableExecuted))
-        cursor.execute(sql.SQL(createTableErrors))
-
-    def createVerify(self):
         createVerifyTable = '''
             CREATE TABLE IF NOT EXISTS verified (
                 id SERIAL PRIMARY KEY,
@@ -85,11 +78,13 @@ class dbPGCalls(object):
                 block integer
             );
         '''
-        cursor = self.dbCon.cursor()
-        cursor.execute(sql.SQL(createVerifyTable))
 
-    def updateExisting(self):
-        return
+        cursor = self.dbCon.cursor()
+        cursor.execute(sql.SQL(createHeightTable))
+        cursor.execute(sql.SQL(createTunnelTable))
+        cursor.execute(sql.SQL(createTableExecuted))
+        cursor.execute(sql.SQL(createTableErrors))
+        cursor.execute(sql.SQL(createVerifyTable))
 
 #import existing sqlite db
     def importSQLite(self):
