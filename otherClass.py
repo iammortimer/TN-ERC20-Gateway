@@ -3,21 +3,27 @@ import traceback
 from web3 import Web3
 from ethtoken.abi import EIP20_ABI
 from dbClass import dbCalls
+from dbPGClass import dbPGCalls
 
 class otherCalls(object):
     def __init__(self, config):
         self.config = config
-        self.db = dbCalls(config)
+
+        if self.config['main']['use-pg']:
+            self.db = dbPGCalls(config)
+        else:
+            self.db = dbCalls(config)
+
         self.w3 = self.getWeb3Instance()
-        self.privatekey = os.getenv(self.config['erc20']['seedenvname'], self.config['erc20']['privateKey'])
+        self.privatekey = os.getenv(self.config['other']['seedenvname'], self.config['other']['privateKey'])
 
         self.lastScannedBlock = self.db.lastScannedBlock("ETH")
 
     def getWeb3Instance(self):
         instance = None
 
-        if self.config['erc20']['node'].startswith('http'):
-            instance = Web3(Web3.HTTPProvider(self.config['erc20']['node']))
+        if self.config['other']['node'].startswith('http'):
+            instance = Web3(Web3.HTTPProvider(self.config['other']['node']))
         else:
             instance = Web3()
 
@@ -32,11 +38,11 @@ class otherCalls(object):
         return self.w3.eth.getBlock(height)
 
     def currentBalance(self):
-        contract = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
-        balance = contract.functions.balanceOf(self.config['erc20']['gatewayAddress']).call()
-        balance /= pow(10, self.config['erc20']['contract']['decimals'])
+        contract = self.w3.eth.contract(address=self.config['other']['contract']['address'], abi=EIP20_ABI)
+        balance = contract.functions.balanceOf(self.config['other']['gatewayAddress']).call()
+        balance /= pow(10, self.config['other']['contract']['decimals'])
 
-        return int(round(balance))
+        return balance
 
     def normalizeAddress(self, address):
         if self.w3.isAddress(address):
@@ -78,10 +84,10 @@ class otherCalls(object):
         result = None
         transaction = self.w3.eth.getTransaction(tx)
 
-        if transaction['to'] == self.config['erc20']['contract']['address'] and transaction['input'].startswith('0xa9059cbb'):
+        if transaction['to'] == self.config['other']['contract']['address'] and transaction['input'].startswith('0xa9059cbb'):
             transactionreceipt = self.w3.eth.getTransactionReceipt(tx)
             if transactionreceipt['status']:
-                contract = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
+                contract = self.w3.eth.contract(address=self.config['other']['contract']['address'], abi=EIP20_ABI)
                 sender = transaction['from']
 
                 try:
@@ -92,30 +98,30 @@ class otherCalls(object):
                     return result
                 
                 recipient = decodedInput[1]['_to']
-                if recipient == self.config['erc20']['gatewayAddress']:
-                    amount = decodedInput[1]['_value'] / 10 ** self.config['erc20']['contract']['decimals']
+                if recipient == self.config['other']['gatewayAddress']:
+                    amount = decodedInput[1]['_value'] / 10 ** self.config['other']['contract']['decimals']
 
                     if not self.db.didWeSendTx(tx.hex()): 
-                        result = { 'sender': sender, 'function': 'transfer', 'recipient': recipient, 'amount': amount, 'token': self.config['erc20']['contract']['address'], 'id': tx.hex() }
+                        result = { 'sender': sender, 'function': 'transfer', 'recipient': recipient, 'amount': amount, 'token': self.config['other']['contract']['address'], 'id': tx.hex() }
 
         return result
 
     def sendTx(self, targetAddress, amount, gasprice = None, gas = None):
-        amount -= self.config['erc20']['fee']
-        amount *= pow(10, self.config['erc20']['contract']['decimals'])
+        amount -= self.config['other']['fee']
+        amount *= pow(10, self.config['other']['contract']['decimals'])
         amount = int(round(amount))
 
-        token = self.w3.eth.contract(address=self.config['erc20']['contract']['address'], abi=EIP20_ABI)
-        nonce = self.w3.eth.getTransactionCount(self.config['erc20']['gatewayAddress'])
+        token = self.w3.eth.contract(address=self.config['other']['contract']['address'], abi=EIP20_ABI)
+        nonce = self.w3.eth.getTransactionCount(self.config['other']['gatewayAddress'], 'pending')
 
         if gasprice == None:
-            if self.config['erc20']['gasprice'] > 0:
-                gasprice = self.w3.toWei(self.config['erc20']['gasprice'], 'gwei')
+            if self.config['other']['gasprice'] > 0:
+                gasprice = self.w3.toWei(self.config['other']['gasprice'], 'gwei')
             else:
                 gasprice = int(self.w3.eth.gasPrice * 1.1)
 
         if gas == None:
-            gas = self.config['erc20']['gas']
+            gas = self.config['other']['gas']
 
         tx = token.functions.transfer(targetAddress, amount).buildTransaction({
             'chainId': 1,

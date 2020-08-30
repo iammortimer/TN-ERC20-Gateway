@@ -7,8 +7,10 @@ from pydantic import BaseModel
 
 from verification import verifier
 from dbClass import dbCalls
+from dbPGClass import dbPGCalls
 from otherClass import otherCalls
 from tnClass import tnCalls
+from etherscanClass import etherscanCalls
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -114,9 +116,18 @@ templates = Jinja2Templates(directory="templates")
 with open('config.json') as json_file:
     config = json.load(json_file)
 
-dbc = dbCalls(config)
 tnc = tnCalls(config)
-otc = otherCalls(config)
+
+if config['other']['etherscan-on']:
+    otc = etherscanCalls(config)
+else:
+    otc = otherCalls(config)
+
+if config['main']['use-pg']:
+    dbc = dbPGCalls(config)
+else:
+    dbc = dbCalls(config)
+
 checkit = verifier(config)
 
 def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
@@ -147,9 +158,9 @@ async def index(request: Request):
                                                      "tn_gateway_fee":config['tn']['gateway_fee'],
                                                      "tn_network_fee":config['tn']['network_fee'],
                                                      "tn_total_fee":config['tn']['network_fee']+config['tn']['gateway_fee'],
-                                                     "eth_gateway_fee":config['erc20']['gateway_fee'],
-                                                     "eth_network_fee":config['erc20']['network_fee'],
-                                                     "eth_total_fee":config['erc20']['network_fee'] + config['erc20']['gateway_fee'],
+                                                     "eth_gateway_fee":config['other']['gateway_fee'],
+                                                     "eth_network_fee":config['other']['network_fee'],
+                                                     "eth_total_fee":config['other']['network_fee'] + config['other']['gateway_fee'],
                                                      "fee": config['tn']['fee'],
                                                      "company": config['main']['company'],
                                                      "email": config['main']['contact-email'],
@@ -159,7 +170,7 @@ async def index(request: Request):
                                                      "ethHeight": heights['Other'],
                                                      "tnHeight": heights['TN'],
                                                      "tnAddress": config['tn']['gatewayAddress'],
-                                                     "ethAddress": config['erc20']['gatewayAddress'],
+                                                     "ethAddress": config['other']['gatewayAddress'],
                                                      "disclaimer": config['main']['disclaimer']})
 
 @app.get('/heights', response_model=cHeights)
@@ -263,9 +274,9 @@ async def api_fullinfo():
             "tn_gateway_fee":config['tn']['gateway_fee'],
             "tn_network_fee":config['tn']['network_fee'],
             "tn_total_fee":config['tn']['network_fee']+config['tn']['gateway_fee'],
-            "other_gateway_fee":config['erc20']['gateway_fee'],
-            "other_network_fee":config['erc20']['network_fee'],
-            "other_total_fee":config['erc20']['network_fee'] + config['erc20']['gateway_fee'],
+            "other_gateway_fee":config['other']['gateway_fee'],
+            "other_network_fee":config['other']['network_fee'],
+            "other_total_fee":config['other']['network_fee'] + config['other']['gateway_fee'],
             "fee": config['tn']['fee'],
             "company": config['main']['company'],
             "email": config['main']['contact-email'],
@@ -276,8 +287,8 @@ async def api_fullinfo():
             "tnHeight": heights['TN'],
             "tnAddress": config['tn']['gatewayAddress'],
             "tnColdAddress": config['tn']['coldwallet'],
-            "otherAddress": config['erc20']['gatewayAddress'],
-            "otherNetwork": config['erc20']['network'],
+            "otherAddress": config['other']['gatewayAddress'],
+            "otherNetwork": config['other']['network'],
             "disclaimer": config['main']['disclaimer'],
             "tn_balance": tnBalance,
             "other_balance": otherBalance,
@@ -300,7 +311,7 @@ async def api_wdCheck(tnAddress: str):
 
 @app.get("/api/checktxs/{tnAddress}", response_model=cTxs)
 async def api_checktxs(tnAddress: str):
-    if not tnc.validateAddress(address):
+    if not tnc.validateAddress(tnAddress):
         temp = cTxs(error='invalid address')
     else:
         result = dbc.checkTXs(address=tnAddress)

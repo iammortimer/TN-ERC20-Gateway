@@ -354,6 +354,17 @@ class dbCalls(object):
         else:
             return {}
 
+    def getUnVerified(self):
+        sql = 'SELECT * FROM verified WHERE block = 0'
+
+        cursor = self.dbCon.cursor()
+        qryResult = cursor.execute(sql).fetchall()
+
+        if len(qryResult) > 0:
+            return qryResult
+        else:
+            return {}
+
     def getVerified(self, tx):
         sql = 'SELECT block FROM verified WHERE tx = ?'
         values = (tx,)
@@ -370,6 +381,13 @@ class dbCalls(object):
         if self.getVerified(tx) is None:
             sql = 'INSERT INTO verified ("chain", "tx", "block") VALUES (?, ?, ?)'
             values = (chain, tx, block)
+
+            cursor = self.dbCon.cursor()
+            qryResult = cursor.execute(sql, values)
+            self.dbCon.commit()
+        else:
+            sql = 'UPDATE verified SET "block" = ? WHERE tx = ?'
+            values = (block, tx)
 
             cursor = self.dbCon.cursor()
             qryResult = cursor.execute(sql, values)

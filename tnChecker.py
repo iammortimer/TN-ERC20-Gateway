@@ -3,15 +3,26 @@ import traceback
 import base58
 import sharedfunc
 from dbClass import dbCalls
+from dbPGClass import dbPGCalls
 from tnClass import tnCalls
 from otherClass import otherCalls
+from etherscanClass import etherscanCalls
 from verification import verifier
 
 class TNChecker(object):
     def __init__(self, config):
         self.config = config
-        self.db = dbCalls(config)
-        self.otc = otherCalls(config)
+
+        if self.config['main']['use-pg']:
+            self.db = dbPGCalls(config)
+        else:
+            self.db = dbCalls(config)
+
+        if self.config['other']['etherscan-on']:
+            self.otc = etherscanCalls(config)
+        else:
+            self.otc = otherCalls(config)
+
         self.tnc = tnCalls(config)
         self.verifier = verifier(config)
 
@@ -59,10 +70,11 @@ class TNChecker(object):
 
                                 if not(str(txId.hex()).startswith('0x')):
                                     self.faultHandler(transaction, "senderror", e=txId.hex())
+                                    self.db.updTunnel("error", transaction['sender'], targetAddress, statusOld="sending")
                                 else:
                                     print("INFO: send tx: " + str(txId.hex()))
 
-                                    self.db.insExecuted(transaction['sender'], targetAddress, txId.hex(), transaction['id'], amount, self.config['erc20']['fee'])
+                                    self.db.insExecuted(transaction['sender'], targetAddress, txId.hex(), transaction['id'], amount, self.config['other']['fee'])
                                     print('INFO: send tokens from tn to erc20!')
 
                                     #self.db.delTunnel(transaction['sender'], targetAddress)
