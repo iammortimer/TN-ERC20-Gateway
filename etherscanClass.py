@@ -42,14 +42,17 @@ class etherscanCalls(object):
 
     def currentBalance(self):
         time.sleep(2)
-        url = self.url + 'module=account&action=tokenbalance&contractaddress=' + self.config['other']['contract']['address'] + '&address=' + self.config['other']['gatewayAddress'] + '&tag=latest&apikey=' + self.apikey
-        result = requests.get(url).json()
+        try:
+            url = self.url + 'module=account&action=tokenbalance&contractaddress=' + self.config['other']['contract']['address'] + '&address=' + self.config['other']['gatewayAddress'] + '&tag=latest&apikey=' + self.apikey
+            result = requests.get(url).json()
 
-        if result['status'] == '1':
-            balance = int(result['result'])
-            balance /= pow(10, self.config['other']['contract']['decimals'])
-        else:
-            balance = 0
+            if result['status'] == '1':
+                balance = int(result['result'])
+                balance /= pow(10, self.config['other']['contract']['decimals'])
+            else:
+                balance = 0
+        except:
+            balance = self.otc.currentBalance()
 
         return balance
 

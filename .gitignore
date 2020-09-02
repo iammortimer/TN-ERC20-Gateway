@@ -8,3 +8,4 @@ templates/index_eth.html
 config_run.json
 test.py
 gateway.db-journal
+gateway.db.imported
