@@ -41,4 +41,3 @@ stages:
         tags: |
           $(Build.SourceBranchName)
           $(GIT_COMMIT)
-          latest
