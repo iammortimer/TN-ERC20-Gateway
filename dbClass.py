@@ -111,6 +111,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return qryResult[0][0]
@@ -122,6 +123,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return qryResult
@@ -135,6 +137,7 @@ class dbCalls(object):
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
+        cursor.close()
 
     def insHeights(self, block, chain):
         sql = 'INSERT INTO heights ("chain", "height") VALUES (?, ?)'
@@ -143,6 +146,7 @@ class dbCalls(object):
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
+        cursor.close()
 
 #tunnel table related
     def doWeHaveTunnels(self):
@@ -150,6 +154,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return True
@@ -162,6 +167,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return qryResult[0][0]
@@ -174,6 +180,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return qryResult[0][0]
@@ -192,6 +199,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return qryResult
@@ -207,6 +215,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return qryResult
@@ -220,6 +229,7 @@ class dbCalls(object):
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
+        cursor.close()
 
     def updTunnel(self, status, sourceAddress, targetAddress, statusOld = ''):
         if statusOld == '':
@@ -231,6 +241,7 @@ class dbCalls(object):
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
+        cursor.close()
 
     def delTunnel(self, sourceAddress, targetAddress):
         sql = 'DELETE FROM tunnel WHERE sourceAddress = ? and targetAddress = ?'
@@ -239,6 +250,7 @@ class dbCalls(object):
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
+        cursor.close()
 
 #executed table related
     def insExecuted(self, sourceAddress, targetAddress, ethTxID, tnTxID, amount, amountFee):
@@ -248,6 +260,7 @@ class dbCalls(object):
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
+        cursor.close()
 
     def updExecuted(self, id, sourceAddress, targetAddress, ethTxID, tnTxID, amount, amountFee):
         sql = 'UPDATE executed SET "sourceAddress" = ?, "targetAddress" = ?, "ethTxId" = ?, "tnTxId" = ?, "amount" = ?, "amountFee" = ?) WHERE id = ?'
@@ -256,6 +269,7 @@ class dbCalls(object):
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
+        cursor.close()
 
     def didWeSendTx(self, txid):
         sql = 'SELECT * FROM executed WHERE (ethTxId = ? OR tnTxId = ?)'
@@ -263,6 +277,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return True
@@ -274,6 +289,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return qryResult
@@ -298,6 +314,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return qryResult
@@ -312,12 +329,14 @@ class dbCalls(object):
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values)
         self.dbCon.commit()
+        cursor.close()
 
     def getErrors(self):
         sql = 'SELECT * FROM errors'
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return qryResult
@@ -336,6 +355,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return qryResult
@@ -348,6 +368,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return qryResult
@@ -359,6 +380,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return qryResult
@@ -371,6 +393,7 @@ class dbCalls(object):
 
         cursor = self.dbCon.cursor()
         qryResult = cursor.execute(sql, values).fetchall()
+        cursor.close()
 
         if len(qryResult) > 0:
             return qryResult[0][0]
@@ -385,6 +408,7 @@ class dbCalls(object):
             cursor = self.dbCon.cursor()
             qryResult = cursor.execute(sql, values)
             self.dbCon.commit()
+            cursor.close()
         else:
             sql = 'UPDATE verified SET "block" = ? WHERE tx = ?'
             values = (block, tx)
@@ -392,6 +416,7 @@ class dbCalls(object):
             cursor = self.dbCon.cursor()
             qryResult = cursor.execute(sql, values)
             self.dbCon.commit()
+            cursor.close()
 
 #other
     def checkTXs(self, address):
@@ -409,7 +434,7 @@ class dbCalls(object):
             cursor.execute(sql, (address, address))
 
         tx = [dict((cursor.description[i][0], value) for i, value in enumerate(row)) for row in cursor.fetchall()]
-        cursor.connection.close()
+        cursor.close()
 
         if len(tx) == 0:
             return {'error': 'no tx found'}
@@ -449,7 +474,11 @@ class dbCalls(object):
         
         values = (fromdate, todate)
 
-        result = self.dbCon.cursor().execute("SELECT SUM(amountFee) as totalFee from executed WHERE timestamp > ? and timestamp < ?", values).fetchall()
+        sql = "SELECT SUM(amountFee) as totalFee from executed WHERE timestamp > ? and timestamp < ?"
+        cursor = self.dbCon.cursor()
+        result = cursor.execute(sql, values).fetchall()
+        cursor.close()
+
         if len(result) == 0:
             Fees = 0
         else:
