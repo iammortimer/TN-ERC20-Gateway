@@ -152,7 +152,9 @@ def get_otherBalance():
 @app.get("/")
 async def index(request: Request):
     heights = await getHeights()
-    return templates.TemplateResponse("index.html", {"request": request, 
+    index = config['main']['index-file']
+    if index == "": index = "index.html"
+    return templates.TemplateResponse(index, {"request": request, 
                                                      "chainName": config['main']['name'],
                                                      "assetID": config['tn']['assetId'],
                                                      "tn_gateway_fee":config['tn']['gateway_fee'],
