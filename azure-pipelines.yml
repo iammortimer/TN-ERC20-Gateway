@@ -34,8 +34,8 @@ stages:
     - task: Docker@2
       displayName: Build an image
       inputs:
-        containerRegistry: 'docker_polaritydevops'
-        repository: 'CryptoBrokersGlobal/polarity-TN-ERC20-Gateway'
+        containerRegistry: 'polarity-acr'
+        repository: 'polarity-TN-ERC20-Gateway'
         command: buildAndPush
         dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
         tags: |
