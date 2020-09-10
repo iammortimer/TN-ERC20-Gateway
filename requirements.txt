@@ -10,4 +10,3 @@ aiofiles
 ethtoken
 web3
 pydantic
-psycopg2-binary
