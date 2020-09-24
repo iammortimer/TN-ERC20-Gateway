@@ -10,4 +10,4 @@ aiofiles
 ethtoken
 web3 <= 5.8.0
 pydantic
-psycopg2-binary 
+psycopg2-binary
