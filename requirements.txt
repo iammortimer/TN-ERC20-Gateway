@@ -8,6 +8,6 @@ uvicorn
 jinja2
 aiofiles
 ethtoken
-web3
+web3 <= 5.8.0
 pydantic
-psycopg2-binary
+psycopg2-binary 
