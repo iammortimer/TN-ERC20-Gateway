@@ -11,7 +11,6 @@ class dbCalls(object):
             path= os.getcwd()
             dbfile = path + '/' + self.config["main"]["db-location"] + '/' + 'gateway.db'
             dbfile = os.path.normpath(dbfile)
-            print(dbfile)
         else:
             dbfile = 'gateway.db'
 
