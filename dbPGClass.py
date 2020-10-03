@@ -92,7 +92,7 @@ class dbPGCalls(object):
 
         if self.config["main"]["db-location"] != "":
             path= os.getcwd()
-            dbfile = path + '\\' + self.config["main"]["db-location"] + '\\' + 'gateway.db'
+            dbfile = path + '/' + self.config["main"]["db-location"] + '/' + 'gateway.db'
             dbfile = os.path.normpath(dbfile)
         else:
             dbfile = 'gateway.db'

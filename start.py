@@ -39,7 +39,7 @@ def main():
 
         if config["main"]["db-location"] != "":
             path= os.getcwd()
-            dbfile = path + '\\' + config["main"]["db-location"] + '\\' + 'gateway.db'
+            dbfile = path + '/' + config["main"]["db-location"] + '/' + 'gateway.db'
             dbfile = os.path.normpath(dbfile)
         else:
             dbfile = 'gateway.db'
