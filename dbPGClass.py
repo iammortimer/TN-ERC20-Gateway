@@ -112,6 +112,8 @@ class dbPGCalls(object):
             create = cursq.fetchone()[0]
             cursq.execute("SELECT * FROM %s;" %table)
             rows=cursq.fetchall()
+            if len(rows) == 0:
+                continue
             colcount=len(rows[0])
             pholder='%s,'*colcount
             newholder=pholder[:-1]
