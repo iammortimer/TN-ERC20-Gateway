@@ -121,12 +121,12 @@ class dbPGCalls(object):
                 curpg.execute("DROP TABLE IF EXISTS %s;" %table)
                 curpg.execute(create)
                 curpg.executemany("INSERT INTO %s VALUES (%s);" % (table, newholder),rows)
+
+                if table != 'heights':
+                    curpg.execute("ALTER TABLE %s ALTER id ADD GENERATED ALWAYS AS IDENTITY (START WITH %s);" % (table, len(rows)+1))
         
             except pgdb.DatabaseError as e:
                 print ('Error %s' % e) 
-
-            if table != 'heights':
-                curpg.execute("ALTER TABLE %s ALTER id ADD GENERATED ALWAYS AS IDENTITY (START WITH %s);" % (table, len(rows)+1))
         
         consq.close()
 
