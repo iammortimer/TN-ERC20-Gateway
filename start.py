@@ -52,7 +52,8 @@ def main():
                 dbfile_new = dbfile.replace('gateway.db', 'gateway.db.imported')
 
                 os.rename(dbfile, dbfile_new)
-            except:
+            except Exception as e:
+                print ('Error %s' % e) 
                 print("ERROR: Error occured during import of previous DB")
                 sys.exit()
         else:
