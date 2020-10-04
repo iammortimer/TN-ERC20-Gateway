@@ -125,7 +125,7 @@ class dbPGCalls(object):
                 if table != 'heights':
                     curpg.execute("ALTER TABLE %s ALTER id ADD GENERATED ALWAYS AS IDENTITY (START WITH %s);" % (table, len(rows)+1))
         
-            except pgdb.DatabaseError as e:
+            except Exception as e:
                 print ('Error %s' % e) 
         
         consq.close()
