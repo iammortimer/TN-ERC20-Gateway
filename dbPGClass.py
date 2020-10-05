@@ -178,10 +178,11 @@ class dbPGCalls(object):
 
 #tunnel table related
     def doWeHaveTunnels(self):
-        sql = 'SELECT * FROM tunnel WHERE status = "created"'
+        sql = 'SELECT * FROM tunnel WHERE "status" = %s'
+        values = ("created", )
 
         cursor = self.dbCon.cursor()
-        cursor.execute(sql)
+        cursor.execute(sql, values)
         qryResult = cursor.fetchall()
         cursor.close()
 
@@ -190,9 +191,9 @@ class dbPGCalls(object):
         else:
             return False
 
-    def gettargetaddress(self, sourceaddress):
-        sql = 'SELECT targetaddress FROM tunnel WHERE status <> "error" AND sourceaddress = %s'
-        values = (sourceaddress,)
+    def getTargetAddress(self, sourceaddress):
+        sql = 'SELECT targetaddress FROM tunnel WHERE "status" <> %s AND sourceaddress = %s'
+        values = ("error", sourceaddress)
 
         cursor = self.dbCon.cursor()
         cursor.execute(sql, values)
@@ -204,9 +205,9 @@ class dbPGCalls(object):
         else:
             return {}
 
-    def getsourceaddress(self, targetaddress):
-        sql = 'SELECT sourceaddress FROM tunnel WHERE status <> "error" AND targetaddress = %s'
-        values = (targetaddress,)
+    def getSourceAddress(self, targetaddress):
+        sql = 'SELECT sourceaddress FROM tunnel WHERE "status" <> %s AND targetaddress = %s'
+        values = ("error", targetaddress)
 
         cursor = self.dbCon.cursor()
         cursor.execute(sql, values)
@@ -240,7 +241,7 @@ class dbPGCalls(object):
 
     def getTunnels(self, status = ''):
         if status != '':
-            sql = 'SELECT sourceaddress, targetaddress FROM tunnel WHERE status = %s'
+            sql = 'SELECT sourceaddress, targetaddress FROM tunnel WHERE "status" = %s'
             values = (status,)
         else:
             return {}
@@ -455,16 +456,17 @@ class dbPGCalls(object):
     def checkTXs(self, address):
         if address == '':
             cursor = self.dbCon.cursor()
-            sql = "SELECT e.sourceaddress, e.targetaddress, e.tntxid, e.ethtxid as 'OtherTxId', ifnull(v.block, 0) as 'TNVerBlock', ifnull(v2.block, 0) as 'OtherVerBlock', e.amount, CASE WHEN e.targetaddress LIKE '3J%' THEN 'Deposit' ELSE 'Withdraw' END 'TypeTX', " \
-            "CASE WHEN e.targetaddress LIKE '3J%' AND v.block IS NOT NULL THEN 'verified' WHEN e.targetaddress NOT LIKE '3J%' AND v2.block IS NOT NULL AND v2.block IS NOT 0 THEN 'verified' ELSE 'unverified' END 'Status' " \
+            sql = "SELECT e.sourceaddress, e.targetaddress, e.tntxid, e.ethtxid as OtherTxId, COALESCE(v.block, 0) as TNVerBlock, COALESCE(v2.block, 0) as OtherVerBlock, e.amount, CASE WHEN e.targetaddress LIKE '3J%%' THEN 'Deposit' ELSE 'Withdraw' END TypeTX, " \
+            "CASE WHEN e.targetaddress LIKE '3J%%' AND v.block IS NOT NULL THEN 'verified' WHEN e.targetaddress NOT LIKE '3J%%' AND v2.block IS NOT NULL AND v2.block > 0 THEN 'verified' ELSE 'unverified' END Status " \
             "FROM executed e LEFT JOIN verified v ON e.tntxid = v.tx LEFT JOIN verified v2 ON e.ethtxid = v2.tx "
             cursor.execute(sql)
         else:
             cursor = self.dbCon.cursor()
-            sql = "SELECT e.sourceaddress, e.targetaddress, e.tntxid, e.ethtxid as 'OtherTxId', ifnull(v.block, 0) as 'TNVerBlock', ifnull(v2.block, 0) as 'OtherVerBlock', e.amount, CASE WHEN e.targetaddress LIKE '3J%' THEN 'Deposit' ELSE 'Withdraw' END 'TypeTX', " \
-            "CASE WHEN e.targetaddress LIKE '3J%' AND v.block IS NOT NULL THEN 'verified' WHEN e.targetaddress NOT LIKE '3J%' AND v2.block IS NOT NULL AND v2.block IS NOT 0 THEN 'verified' ELSE 'unverified' END 'Status' " \
+            sql = "SELECT e.sourceaddress, e.targetaddress, e.tntxid, e.ethtxid as OtherTxId, COALESCE(v.block, 0) as TNVerBlock, COALESCE(v2.block, 0) as OtherVerBlock, e.amount, CASE WHEN e.targetaddress LIKE '3J%%' THEN 'Deposit' ELSE 'Withdraw' END TypeTX, " \
+            "CASE WHEN e.targetaddress LIKE '3J%%' AND v.block IS NOT NULL THEN 'verified' WHEN e.targetaddress NOT LIKE '3J%%' AND v2.block IS NOT NULL AND v2.block > 0 THEN 'verified' ELSE 'unverified' END Status " \
             "FROM executed e LEFT JOIN verified v ON e.tntxid = v.tx LEFT JOIN verified v2 ON e.ethtxid = v2.tx WHERE (e.sourceaddress = %s or e.targetaddress = %s)"
-            cursor.execute(sql, (address, address))
+            values = (address, address)
+            cursor.execute(sql, values)
 
         tx = [dict((cursor.description[i][0], value) for i, value in enumerate(row)) for row in cursor.fetchall()]
         cursor.close()
