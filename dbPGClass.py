@@ -285,7 +285,7 @@ class dbPGCalls(object):
 
 #executed table related
     def insExecuted(self, sourceaddress, targetaddress, ethtxid, tntxid, amount, amountFee):
-        sql = 'INSERT INTO executed ("sourceaddress", "targetaddress", "ethtxid", "tntxid", "amount", "amountFee") VALUES (%s, %s, %s, %s, %s, %s)'
+        sql = 'INSERT INTO executed ("sourceaddress", "targetaddress", "ethtxid", "tntxid", "amount", "amountfee") VALUES (%s, %s, %s, %s, %s, %s)'
         values = (sourceaddress, targetaddress, ethtxid, tntxid, amount, amountFee)
 
         cursor = self.dbCon.cursor()
@@ -293,7 +293,7 @@ class dbPGCalls(object):
         cursor.close()
 
     def updExecuted(self, id, sourceaddress, targetaddress, ethtxid, tntxid, amount, amountFee):
-        sql = 'UPDATE executed SET "sourceaddress" = %s, "targetaddress" = %s, "ethtxid" = %s, "tntxid" = %s, "amount" = %s, "amountFee" = %s) WHERE id = %s'
+        sql = 'UPDATE executed SET "sourceaddress" = %s, "targetaddress" = %s, "ethtxid" = %s, "tntxid" = %s, "amount" = %s, "amountfee" = %s) WHERE id = %s'
         values = (sourceaddress, targetaddress, ethtxid, tntxid, amount, amountFee, id)
 
         cursor = self.dbCon.cursor()
