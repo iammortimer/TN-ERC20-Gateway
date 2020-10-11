@@ -7,13 +7,16 @@ from dbClass import dbCalls
 from dbPGClass import dbPGCalls
 
 class tnCalls(object):
-    def __init__(self, config):
+    def __init__(self, config, db = None):
         self.config = config
 
-        if self.config['main']['use-pg']:
-            self.db = dbPGCalls(config)
+        if db == None:
+            if self.config['main']['use-pg']:
+                self.db = dbPGCalls(config)
+            else:
+                self.db = dbCalls(config)
         else:
-            self.db = dbCalls(config)
+            self.db = db
 
         self.node = self.config['tn']['node']
 

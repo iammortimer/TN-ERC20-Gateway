@@ -13,23 +13,17 @@ from tnChecker import TNChecker
 from ethChecker import ETHChecker
 from controlClass import controller
 
-with open('config.json') as json_file:
+with open('config_run.json') as json_file:
     config = json.load(json_file)
 
-def initialisedb():
+def initialisedb(db):
     #get current TN block:
     tnlatestBlock = tnCalls(config).currentBlock()
-    if config['main']['use-pg']:
-        dbPGCalls(config).insHeights(tnlatestBlock, 'TN')
-    else:
-        dbCalls(config).insHeights(tnlatestBlock, 'TN')
+    db.insHeights(tnlatestBlock, 'TN')
 
     #get current ETH block:
     ethlatestBlock = otherCalls(config).currentBlock()
-    if config['main']['use-pg']:
-        dbPGCalls(config).insHeights(ethlatestBlock, 'ETH')
-    else:
-        dbCalls(config).insHeights(ethlatestBlock, 'ETH')
+    db.insHeights(ethlatestBlock, 'ETH')
 
 def main():
     #check db
@@ -65,7 +59,7 @@ def main():
                         initialisedb()
             except:
                 dbc.createdb()
-                initialisedb()
+                initialisedb(dbc)
     else:
         #use SQLite
         dbc = dbCalls(config)
@@ -78,15 +72,15 @@ def main():
                     initialisedb()
         except:
             dbc.createdb()
-            initialisedb()
+            initialisedb(dbc)
 
         dbc.createVerify()
         dbc.updateExisting()
         
     #load and start threads
-    tn = TNChecker(config)
-    eth = ETHChecker(config)
-    ctrl = controller(config)
+    tn = TNChecker(config, dbc)
+    eth = ETHChecker(config, dbc)
+    ctrl = controller(config, dbc)
     ethThread = threading.Thread(target=eth.run)
     tnThread = threading.Thread(target=tn.run)
     ctrlThread = threading.Thread(target=ctrl.run)

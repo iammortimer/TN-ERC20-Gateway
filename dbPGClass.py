@@ -1,5 +1,6 @@
 import psycopg2 as pgdb
 from psycopg2 import sql
+from psycopg2 import pool
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 from datetime import timedelta
@@ -11,8 +12,11 @@ class dbPGCalls(object):
         self.config = config
 
         try:
-            self.dbCon = pgdb.connect(database=config['main']['name'], user=self.config["postgres"]["pguser"], password=self.config["postgres"]["pgpswd"], host=self.config["postgres"]["pghost"], port=self.config["postgres"]["pgport"])
-            self.dbCon.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            self.psPool = pgdb.pool.ThreadedConnectionPool(1, 10,database=config['main']['name'], user=self.config["postgres"]["pguser"], password=self.config["postgres"]["pgpswd"], host=self.config["postgres"]["pghost"], port=self.config["postgres"]["pgport"])
+            dbCon = self.psPool.getconn()
+            #self.dbCon = pgdb.connect(database=config['main']['name'], user=self.config["postgres"]["pguser"], password=self.config["postgres"]["pgpswd"], host=self.config["postgres"]["pghost"], port=self.config["postgres"]["pgport"])
+            #self.dbCon.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            self.psPool.putconn(dbCon)
         except:
             self.dbCon = pgdb.connect(user=self.config["postgres"]["pguser"], password=self.config["postgres"]["pgpswd"], host=self.config["postgres"]["pghost"], port=self.config["postgres"]["pgport"])
             self.dbCon.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
@@ -21,8 +25,18 @@ class dbPGCalls(object):
             cursor.execute(sqlstr)
             cursor.close()
             self.dbCon.close()
-            self.dbCon = pgdb.connect(database=config['main']['name'], user=self.config["postgres"]["pguser"], password=self.config["postgres"]["pgpswd"], host=self.config["postgres"]["pghost"], port=self.config["postgres"]["pgport"])
-            self.dbCon.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+
+            self.psPool = pgdb.pool.ThreadedConnectionPool(1, 10,database=config['main']['name'], user=self.config["postgres"]["pguser"], password=self.config["postgres"]["pgpswd"], host=self.config["postgres"]["pghost"], port=self.config["postgres"]["pgport"])
+            #self.dbCon = pgdb.connect(database=config['main']['name'], user=self.config["postgres"]["pguser"], password=self.config["postgres"]["pgpswd"], host=self.config["postgres"]["pghost"], port=self.config["postgres"]["pgport"])
+            #self.dbCon.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+
+    def openConn(self):
+        dbCon = self.psPool.getconn()
+        dbCon.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        return dbCon
+
+    def closeConn(self, dbCon):
+        self.psPool.putconn(dbCon)
 
 #DB Setup part
     def createdb(self):
@@ -79,12 +93,14 @@ class dbPGCalls(object):
             );
         '''
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql.SQL(createHeightTable))
         cursor.execute(sql.SQL(createTunnelTable))
         cursor.execute(sql.SQL(createTableExecuted))
         cursor.execute(sql.SQL(createTableErrors))
         cursor.execute(sql.SQL(createVerifyTable))
+        self.closeConn(dbCon)
 
 #import existing sqlite db
     def importSQLite(self):
@@ -107,6 +123,7 @@ class dbPGCalls(object):
         for item in tabgrab:
             tabnames.append(item[0])
         
+        dbCon = self.openConn()
         for table in tabnames:
             cursq.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name = ?;", (table,))
             create = cursq.fetchone()[0]
@@ -119,7 +136,7 @@ class dbPGCalls(object):
             newholder=pholder[:-1]
         
             try:
-                curpg = self.dbCon.cursor()
+                curpg = dbCon.cursor()
                 curpg.execute("DROP TABLE IF EXISTS %s;" %table)
                 curpg.execute(create)
                 curpg.executemany("INSERT INTO %s VALUES (%s);" % (table, newholder),rows)
@@ -128,8 +145,10 @@ class dbPGCalls(object):
                     curpg.execute("ALTER TABLE %s ALTER id ADD GENERATED ALWAYS AS IDENTITY (START WITH %s);" % (table, len(rows)+1))
         
             except Exception as e:
+                self.closeConn(dbCon)
                 print ('Error %s' % e) 
         
+        self.closeConn(dbCon)
         consq.close()
 
 #heights table related
@@ -137,10 +156,12 @@ class dbPGCalls(object):
         sql = 'SELECT height FROM heights WHERE chain = %s'
         values = (chain,)
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return qryResult[0][0]
@@ -150,10 +171,12 @@ class dbPGCalls(object):
     def getHeights(self):
         sql = 'SELECT chain, height FROM heights'
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return qryResult
@@ -164,27 +187,33 @@ class dbPGCalls(object):
         sql = 'UPDATE heights SET "height" = %s WHERE chain = %s'
         values = (block, chain)
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         cursor.close()
+        self.closeConn(dbCon)
 
     def insHeights(self, block, chain):
         sql = 'INSERT INTO heights ("chain", "height") VALUES (%s, %s)'
         values = (chain, block)
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         cursor.close()
+        self.closeConn(dbCon)
 
 #tunnel table related
     def doWeHaveTunnels(self):
         sql = 'SELECT * FROM tunnel WHERE "status" = %s'
         values = ("created", )
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return True
@@ -195,10 +224,12 @@ class dbPGCalls(object):
         sql = 'SELECT targetaddress FROM tunnel WHERE "status" <> %s AND sourceaddress = %s'
         values = ("error", sourceaddress)
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return qryResult[0][0]
@@ -209,10 +240,12 @@ class dbPGCalls(object):
         sql = 'SELECT sourceaddress FROM tunnel WHERE "status" <> %s AND targetaddress = %s'
         values = ("error", targetaddress)
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return qryResult[0][0]
@@ -229,10 +262,12 @@ class dbPGCalls(object):
         else:
             return {}
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return qryResult
@@ -246,10 +281,12 @@ class dbPGCalls(object):
         else:
             return {}
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return qryResult
@@ -260,9 +297,11 @@ class dbPGCalls(object):
         sql = 'INSERT INTO tunnel ("sourceaddress", "targetaddress", "status", "timestamp") VALUES (%s, %s, %s, CURRENT_TIMESTAMP)'
         values = (sourceaddress, targetaddress, status)
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         cursor.close()
+        self.closeConn(dbCon)
 
     def updTunnel(self, status, sourceaddress, targetaddress, statusOld = ''):
         if statusOld == '':
@@ -271,43 +310,53 @@ class dbPGCalls(object):
         sql = 'UPDATE tunnel SET "status" = %s, "timestamp" = CURRENT_TIMESTAMP WHERE status = %s AND sourceaddress = %s and targetaddress = %s'
         values = (status, statusOld, sourceaddress, targetaddress)
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         cursor.close()
+        self.closeConn(dbCon)
 
     def delTunnel(self, sourceaddress, targetaddress):
         sql = 'DELETE FROM tunnel WHERE sourceaddress = %s and targetaddress = %s'
         values = (sourceaddress, targetaddress)
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         cursor.close()
+        self.closeConn(dbCon)
 
 #executed table related
     def insExecuted(self, sourceaddress, targetaddress, ethtxid, tntxid, amount, amountFee):
         sql = 'INSERT INTO executed ("sourceaddress", "targetaddress", "ethtxid", "tntxid", "amount", "amountfee") VALUES (%s, %s, %s, %s, %s, %s)'
         values = (sourceaddress, targetaddress, ethtxid, tntxid, amount, amountFee)
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         cursor.close()
+        self.closeConn(dbCon)
 
     def updExecuted(self, id, sourceaddress, targetaddress, ethtxid, tntxid, amount, amountFee):
         sql = 'UPDATE executed SET "sourceaddress" = %s, "targetaddress" = %s, "ethtxid" = %s, "tntxid" = %s, "amount" = %s, "amountfee" = %s) WHERE id = %s'
         values = (sourceaddress, targetaddress, ethtxid, tntxid, amount, amountFee, id)
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         cursor.close()
+        self.closeConn(dbCon)
 
     def didWeSendTx(self, txid):
         sql = 'SELECT * FROM executed WHERE (ethtxid = %s OR tntxid = %s)'
         values = (txid, txid)
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return True
@@ -317,10 +366,12 @@ class dbPGCalls(object):
     def getExecutedAll(self):
         sql = 'SELECT * FROM executed'
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return qryResult
@@ -343,10 +394,12 @@ class dbPGCalls(object):
         else:
             return {}
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return qryResult
@@ -358,17 +411,21 @@ class dbPGCalls(object):
         sql = 'INSERT INTO errors ("sourceaddress", "targetaddress", "tntxid", "ethtxid", "amount", "error", "exception") VALUES (%s, %s, %s, %s, %s, %s, %s)'
         values = (sourceaddress, targetaddress, tntxid, ethtxid, amount, error, exception)
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         cursor.close()
+        self.closeConn(dbCon)
 
     def getErrors(self):
         sql = 'SELECT * FROM errors'
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return qryResult
@@ -385,10 +442,12 @@ class dbPGCalls(object):
         else:
             return {}
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return qryResult
@@ -399,10 +458,12 @@ class dbPGCalls(object):
     def getVerifiedAll(self):
         sql = 'SELECT * FROM verified'
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return qryResult
@@ -412,10 +473,12 @@ class dbPGCalls(object):
     def getUnVerified(self):
         sql = 'SELECT * FROM verified WHERE block = 0'
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return qryResult
@@ -426,10 +489,12 @@ class dbPGCalls(object):
         sql = 'SELECT block FROM verified WHERE tx = %s'
         values = (tx,)
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) > 0:
             return qryResult[0][0]
@@ -441,27 +506,33 @@ class dbPGCalls(object):
             sql = 'INSERT INTO verified ("chain", "tx", "block") VALUES (%s, %s, %s)'
             values = (chain, tx, block)
 
-            cursor = self.dbCon.cursor()
+            dbCon = self.openConn()
+            cursor = dbCon.cursor()
             cursor.execute(sql, values)
             cursor.close()
+            self.closeConn(dbCon)
         else:
-            sql = 'UPDATE verified SET "block" = %s WHERE tx = %s'
+            sql = 'UPDATE verified SET block = %s WHERE "tx" = %s'
             values = (block, tx)
 
-            cursor = self.dbCon.cursor()
+            dbCon = self.openConn()
+            cursor = dbCon.cursor()
             cursor.execute(sql, values)
             cursor.close()
+            self.closeConn(dbCon)
 
 #other
     def checkTXs(self, address):
         if address == '':
-            cursor = self.dbCon.cursor()
+            dbCon = self.openConn()
+            cursor = dbCon.cursor()
             sql = "SELECT e.sourceaddress, e.targetaddress, e.tntxid, e.ethtxid as OtherTxId, COALESCE(v.block, 0) as TNVerBlock, COALESCE(v2.block, 0) as OtherVerBlock, e.amount, CASE WHEN e.targetaddress LIKE '3J%%' THEN 'Deposit' ELSE 'Withdraw' END TypeTX, " \
             "CASE WHEN e.targetaddress LIKE '3J%%' AND v.block IS NOT NULL THEN 'verified' WHEN e.targetaddress NOT LIKE '3J%%' AND v2.block IS NOT NULL AND v2.block > 0 THEN 'verified' ELSE 'unverified' END Status " \
             "FROM executed e LEFT JOIN verified v ON e.tntxid = v.tx LEFT JOIN verified v2 ON e.ethtxid = v2.tx "
             cursor.execute(sql)
         else:
-            cursor = self.dbCon.cursor()
+            dbCon = self.openConn()
+            cursor = dbCon.cursor()
             sql = "SELECT e.sourceaddress, e.targetaddress, e.tntxid, e.ethtxid as OtherTxId, COALESCE(v.block, 0) as TNVerBlock, COALESCE(v2.block, 0) as OtherVerBlock, e.amount, CASE WHEN e.targetaddress LIKE '3J%%' THEN 'Deposit' ELSE 'Withdraw' END TypeTX, " \
             "CASE WHEN e.targetaddress LIKE '3J%%' AND v.block IS NOT NULL THEN 'verified' WHEN e.targetaddress NOT LIKE '3J%%' AND v2.block IS NOT NULL AND v2.block > 0 THEN 'verified' ELSE 'unverified' END Status " \
             "FROM executed e LEFT JOIN verified v ON e.tntxid = v.tx LEFT JOIN verified v2 ON e.ethtxid = v2.tx WHERE (e.sourceaddress = %s or e.targetaddress = %s)"
@@ -470,6 +541,7 @@ class dbPGCalls(object):
 
         tx = [dict((cursor.description[i][0], value) for i, value in enumerate(row)) for row in cursor.fetchall()]
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(tx) == 0:
             return {'error': 'no tx found'}
@@ -511,10 +583,12 @@ class dbPGCalls(object):
 
         sql = 'SELECT SUM(amountFee) as totalFee from executed WHERE timestamp > %s and timestamp < %s'
 
-        cursor = self.dbCon.cursor()
+        dbCon = self.openConn()
+        cursor = dbCon.cursor()
         cursor.execute(sql, values)
         qryResult = cursor.fetchall()
         cursor.close()
+        self.closeConn(dbCon)
 
         if len(qryResult) == 0:
             Fees = 0

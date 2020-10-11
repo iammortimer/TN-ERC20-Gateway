@@ -10,21 +10,24 @@ from etherscanClass import etherscanCalls
 from verification import verifier
 
 class TNChecker(object):
-    def __init__(self, config):
+    def __init__(self, config, db = None):
         self.config = config
 
-        if self.config['main']['use-pg']:
-            self.db = dbPGCalls(config)
+        if db == None:
+            if self.config['main']['use-pg']:
+                self.db = dbPGCalls(config)
+            else:
+                self.db = dbCalls(config)
         else:
-            self.db = dbCalls(config)
+            self.db = db
 
         if self.config['other']['etherscan-on']:
-            self.otc = etherscanCalls(config)
+            self.otc = etherscanCalls(config, self.db)
         else:
-            self.otc = otherCalls(config)
+            self.otc = otherCalls(config, self.db)
 
-        self.tnc = tnCalls(config)
-        self.verifier = verifier(config)
+        self.tnc = tnCalls(config, self.db)
+        self.verifier = verifier(config, self.db)
 
         self.lastScannedBlock = self.db.lastScannedBlock("TN")
 

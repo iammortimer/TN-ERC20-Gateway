@@ -5,19 +5,23 @@ from otherClass import otherCalls
 from etherscanClass import etherscanCalls
 
 class verifier(object):
-    def __init__(self, config):
+    def __init__(self, config, db = None):
         self.config = config
-        self.tnc = tnCalls(config)
 
-        if self.config['main']['use-pg']:
-            self.db = dbPGCalls(config)
+        if db == None:
+            if self.config['main']['use-pg']:
+                self.db = dbPGCalls(config)
+            else:
+                self.db = dbCalls(config)
         else:
-            self.db = dbCalls(config)
+            self.db = db
+
+        self.tnc = tnCalls(config, self.db)
 
         if self.config['other']['etherscan-on']:
-            self.otc = etherscanCalls(config)
+            self.otc = etherscanCalls(config, self.db)
         else:
-            self.otc = otherCalls(config)
+            self.otc = otherCalls(config, self.db)
 
     def checkTX(self, targetAddress = '', sourceAddress = ''):
         result = {'status': '', 'tx': '', 'block': '', 'error': ''}

@@ -7,15 +7,19 @@ from dbPGClass import dbPGCalls
 from otherClass import otherCalls
 
 class etherscanCalls(object):
-    def __init__(self, config):
+    def __init__(self, config, db = None):
         self.config = config
-        self.otc = otherCalls(config)
 
-        if self.config['main']['use-pg']:
-            self.db = dbPGCalls(config)
+        if db == None:
+            if self.config['main']['use-pg']:
+                self.db = dbPGCalls(config)
+            else:
+                self.db = dbCalls(config)
         else:
-            self.db = dbCalls(config)
+            self.db = db
 
+        self.otc = otherCalls(config, self.db)
+        
         self.apikey = self.config['other']['etherscan-apikey']
         self.url = 'https://api.etherscan.io/api?'
 

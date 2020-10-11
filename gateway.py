@@ -113,22 +113,22 @@ security = HTTPBasic()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-with open('config.json') as json_file:
+with open('config_run.json') as json_file:
     config = json.load(json_file)
-
-tnc = tnCalls(config)
-
-if config['other']['etherscan-on']:
-    otc = etherscanCalls(config)
-else:
-    otc = otherCalls(config)
 
 if config['main']['use-pg']:
     dbc = dbPGCalls(config)
 else:
     dbc = dbCalls(config)
 
-checkit = verifier(config)
+tnc = tnCalls(config, dbc)
+
+if config['other']['etherscan-on']:
+    otc = etherscanCalls(config, dbc)
+else:
+    otc = otherCalls(config, dbc)
+
+checkit = verifier(config, dbc)
 
 def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = secrets.compare_digest(credentials.username, config["main"]["admin-username"])
