@@ -13,7 +13,7 @@ from tnChecker import TNChecker
 from ethChecker import ETHChecker
 from controlClass import controller
 
-with open('config_run.json') as json_file:
+with open('config.json') as json_file:
     config = json.load(json_file)
 
 def initialisedb(db):
