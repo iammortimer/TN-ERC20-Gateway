@@ -42,6 +42,7 @@ def main():
             #import old db
             print("INFO: importing old SQLite DB")
             try:
+                dbc.createdb()
                 dbc.importSQLite()
                 dbfile_new = dbfile.replace('gateway.db', 'gateway.db.imported')
 
