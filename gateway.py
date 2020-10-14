@@ -217,54 +217,76 @@ async def checkTunnel(address: str):
 #TODO: rewrite to post
 @app.get('/tunnel/{sourceAddress}/{targetAddress}', response_model=cExecResult)
 async def createTunnel(sourceAddress: str, targetAddress: str):
-    sourceAddress = re.sub('[\W_]+', '', sourceAddress)
-    targetAddress = re.sub('[\W_]+', '', targetAddress)
+    try:
+        if config["main"]["close_tunnel"]:
+            bContinue = False
+        else:
+            bContinue = True
+    except:
+        bContinue = True
 
-    if not tnc.validateAddress(targetAddress):
-        return {'successful': False}
+    if bContinue:
+        sourceAddress = re.sub('[\W_]+', '', sourceAddress)
+        targetAddress = re.sub('[\W_]+', '', targetAddress)
 
-    if not otc.validateAddress(sourceAddress):
-        return { 'successful': False }
+        if not tnc.validateAddress(targetAddress):
+            return {'successful': False}
 
-    sourceAddress = otc.normalizeAddress(sourceAddress)
-
-    result = dbc.getTargetAddress(sourceAddress)
-    if len(result) == 0:
-        dbc.insTunnel("created", sourceAddress, targetAddress)
-        print("INFO: tunnel created")
-        return { 'successful': True }
-    else:
-        if result != targetAddress:
+        if not otc.validateAddress(sourceAddress):
             return { 'successful': False }
-        else: 
+
+        sourceAddress = otc.normalizeAddress(sourceAddress)
+
+        result = dbc.getTargetAddress(sourceAddress)
+        if len(result) == 0:
+            dbc.insTunnel("created", sourceAddress, targetAddress)
+            print("INFO: tunnel created")
             return { 'successful': True }
+        else:
+            if result != targetAddress:
+                return { 'successful': False }
+            else: 
+                return { 'successful': True }
+    else:
+        return { 'successful': False }
 
 #TODO: rewrite to post
 @app.get('/dustkey/{targetAddress}', response_model=cDustkey)
 async def createTunnelDK(targetAddress: str):
-    if not tnc.validateAddress(targetAddress):
-        return {'successful': False}
-
-    sourceAddress = str(round(datetime.datetime.now().timestamp()))
-    sourceAddress = sourceAddress[-6:]
-
-    result = dbc.getTargetAddress(sourceAddress)
-    if len(result) == 0:
-        result = dbc.getSourceAddress(targetAddress)
-
-        if len(result) == 0:
-            dbc.insTunnel("created", sourceAddress, targetAddress)
-            print("INFO: tunnel created - dustkey")
-
-            return { 'successful': True, 'dustkey': sourceAddress}
+    try:
+        if config["main"]["close_tunnel"]:
+            bContinue = False
         else:
-            return { 'successful': True, 'dustkey': result }
-    else:
-        result = dbc.getSourceAddress(targetAddress)
+            bContinue = True
+    except:
+        bContinue = True
+
+    if bContinue:
+        if not tnc.validateAddress(targetAddress):
+            return {'successful': False}
+
+        sourceAddress = str(round(datetime.datetime.now().timestamp()))
+        sourceAddress = sourceAddress[-6:]
+
+        result = dbc.getTargetAddress(sourceAddress)
         if len(result) == 0:
-            return { 'successful': False }
-        else: 
-            return { 'successful': True, 'dustkey': result }
+            result = dbc.getSourceAddress(targetAddress)
+
+            if len(result) == 0:
+                dbc.insTunnel("created", sourceAddress, targetAddress)
+                print("INFO: tunnel created - dustkey")
+
+                return { 'successful': True, 'dustkey': sourceAddress}
+            else:
+                return { 'successful': True, 'dustkey': result }
+        else:
+            result = dbc.getSourceAddress(targetAddress)
+            if len(result) == 0:
+                return { 'successful': False }
+            else: 
+                return { 'successful': True, 'dustkey': result }
+    else:
+        return { 'successful': False }
 
 @app.get("/api/fullinfo", response_model=cFullInfo)
 async def api_fullinfo():
