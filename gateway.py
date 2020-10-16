@@ -91,6 +91,8 @@ class cFees(BaseModel):
     totalFees: float
 
 class cHealth(BaseModel):
+    chainName: str
+    assetID: str
     status: str
     connectionTN: bool
     connectionOther: bool

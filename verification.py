@@ -116,20 +116,22 @@ class verifier(object):
         if heightTN < 100: total += 100
         elif heightTN > 100: total += 50
 
-        if (self.config["main"]["max"] * 10) > balanceOther > 0: total += 100
-        if (self.config["main"]["max"] * 10) > balanceTN > 0: total += 100
+        #if (self.config["main"]["max"] * 10) > balanceOther > 0: total += 100
+        #if (self.config["main"]["max"] * 10) > balanceTN > 0: total += 100
 
-        if numErrors == 0: total += 100
-        elif numErrors < 10: total += 50
+        #if numErrors == 0: total += 100
+        if numErrors < 10: total += 100
 
         if not connTN or not connOther:
             status = "red"
-        elif total == 700:
+        elif total == 500:
             status = "green"
         else:
             status = "yellow"
         
         result = {
+            "chainName": self.config['main']['name'],
+            "assetID": self.config['tn']['assetId'],
             "status": status,
             "connectionTN": connTN,
             "connectionOther": connOther,
